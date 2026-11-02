@@ -1,3 +1,7 @@
+import type { BriefingFeed } from './briefing';
+import type { CalendarFeed } from './calendar';
+import type { PortfolioFeed, Range } from './portfolio';
+
 export type AtlasNode =
   | { name: string; path: string; type: 'dir'; children: AtlasNode[] }
   | { name: string; path: string; type: 'file'; kind: 'markdown' | 'text' | 'unsupported' };
@@ -65,6 +69,10 @@ export const api = {
   file: (path: string) => get<AtlasFile>(`/api/atlas/file?path=${encodeURIComponent(path)}`),
   recent: (limit = 8) => get<RecentFile[]>(`/api/atlas/recent?limit=${limit}`),
   library: () => get<Library>('/api/notes/library'),
+  calendar: (start: string, days: number) =>
+    get<CalendarFeed>(`/api/calendar?${new URLSearchParams({ start, days: String(days) })}`),
+  portfolio: (range: Range) => get<PortfolioFeed>(`/api/portfolio?${new URLSearchParams({ range })}`),
+  briefing: () => get<BriefingFeed>('/api/briefing'),
   // Notes writes (D21): proxied to Chalk by the Atlas backend. Chalk may adjust names, so callers use the returned name.
   createNotebook: (name: string) => request<{ name: string }>('POST', '/api/notes/notebooks', { name }),
   renameNotebook: (nb: string, name: string) => request<{ name: string }>('PUT', `/api/notes/notebooks/${enc(nb)}`, { name }),
