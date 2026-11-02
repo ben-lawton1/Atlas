@@ -33,6 +33,25 @@ Live check 2026-11-02 against real Chalk (from `feat/atlas-sync`) and `atlas-ter
   - The Claude button starts the VS Code extension's `claude.exe`, which shows first-run onboarding (theme picker).
 - **Not checked live:** Ctrl+` from inside real Chalk and dock persistence on a real note page. My script looked for "Test Board" after Ben had renamed it. Both are covered by the e2e suites.
 
+## Round 3 (2026-11-02): branch `feat/dashboards` (off `feat/atlas-v1`)
+
+Decisions D35–D40. Four Sonnet agents in parallel, each owning its own files; Opus integrates.
+
+| # | Slice | Status |
+|---|---|---|
+| 14 | Backend: `/api/calendar`, `/api/portfolio`, `/api/briefing` (D37), not connected, with tests | done |
+| 15 | Frontend data: `calendar.ts`, `portfolio.ts`, `briefing.ts`, api calls, unit tests | done |
+| 16 | Dashboard UI: week calendar, portfolio panel, briefing panel, `/calendar` and `/portfolio` views | done |
+| 17 | Shell: rail, top bar with command box (Ctrl+K), Ctrl+\ sidebar toggle, routes, new Home, e2e | done |
+
+Checks 2026-11-02 (all in Docker): backend 141 passed, frontend 81 unit tests passed, e2e 31/31. Not yet looked at by Ben in the running app.
+
+Next for round 3:
+- **Connectors.** Calendar sources first: Google Calendar (personal) and Microsoft 365 (Hyper, not authorized yet). Then a brokerage API for the portfolio. Decide whether sources call the APIs live or read rows that a sync (a Claude MCP run or a module) writes into `state/` (the guard already keeps `*.sqlite` from being served).
+- **Tasks.** Where they live and how they're edited (D38), then Add task and subtasks.
+- **Briefing.** Generated each morning once calendar and mail are connected.
+- **Deferred design items:** Spaces, notifications, Auto-plan, "Ask Atlas" in the command box.
+
 ## Not yet done / next
 
 - **Bridge switch:** Ben closes `chalk-terminal.exe` and starts `atlas-terminal.exe` on the default `127.0.0.1:7681`; then recreate the Atlas container without the temporary `ATLAS_TERMINAL_URL=http://127.0.0.1:7682` override.

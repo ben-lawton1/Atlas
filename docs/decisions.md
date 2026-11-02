@@ -67,3 +67,22 @@ Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, 
 - **D32. Renaming a notebook keeps its sections expanded** (Chalk loses that state because section keys embed the notebook name). A new notebook creates a first section "Quick Notes" and a first page, like Chalk.
 - **D33. The Claude button is only in the dock header and stays enabled while the bridge is unknown or offline;** it is disabled only when a running bridge doesn't list a `claude` profile. Clicking it with the bridge offline opens the dock, which explains how to start it.
 - **D34. The test stack's fake `claude` profile is `sh /etc/atlas-test/fake-claude.sh`,** which prints `CLAUDE-STUB`; the e2e checks the button end to end without Claude Code.
+
+## Round 3 (2026-11-02): dashboard home, calendar, portfolio
+
+Source: Ben's "AI OS Home" design canvas (claude.ai artifact `9d3dLaWpz6ZnYXpZnYBKNT`).
+
+- **D35. Home is the dashboard from the design.** It shows this week's calendar, the portfolio, the daily briefing, and below them the two existing recent cards. The "Dashboards: coming soon" card is gone.
+- **D36. A left rail is the main navigation; the existing sidebar stays beside it and can be hidden.**
+  - Rail items: Home, Calendar, Portfolio, Notes, Brain.
+  - The notes and brain sidebar (D5, D23) toggles with ☰ and Ctrl+\. Its open state is remembered on desktop in `localStorage['atlas:sidebar-open']`. On phone width it stays an overlay that starts closed.
+  - Ctrl+\ inside embedded Chalk keeps toggling Chalk's own notebook sidebar (Chalk's existing binding), so D13 is unchanged. In the terminal dock Ctrl+\ goes to Atlas, not the shell.
+  - Why: Ben wants the design's nav and the existing trees, and the trees out of the way when not needed.
+- **D37. Calendar, portfolio and briefing data come through read-only Atlas endpoints with a fixed shape.**
+  - Endpoints: `GET /api/calendar?start=YYYY-MM-DD&days=N` (1–42, default 7), `GET /api/portfolio?range=1D|1W|1M|1Y|ALL`, `GET /api/briefing`.
+  - Until a connector exists they return empty data with `connected: false`.
+  - Connectors (Google Calendar, Microsoft 365, a brokerage API, Claude-run MCP syncs) plug in behind these endpoints in `backend/app/dashboards.py` later, without frontend changes.
+  - Why: one origin (D10), and the contract can be tested before any data exists. Shapes: `backend/app/dashboards.py`, `frontend/src/calendar.ts`, `frontend/src/portfolio.ts`, `frontend/src/briefing.ts`.
+- **D38. No controls that do nothing.** Tasks render read-only. Add task, Auto-plan, Apply/Draft suggestions, the notifications bell and Spaces wait until something backs them. Where tasks are stored (`state/` or a connector) is decided together with sync.
+- **D39. The top bar has a command box (Ctrl+K) that jumps to views, note pages and brain files.** It runs nothing; terminal commands stay profile-only (D25). "Ask Atlas" (sending the text to Claude) is deferred.
+- **D40. New routes `/calendar` and `/portfolio`** (D12). The calendar view keeps its week in local state.

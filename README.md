@@ -1,6 +1,6 @@
 # Atlas
 
-Atlas is the name of Ben's AI operating system. This repo is its front end: a home page, a read-only browser for the brain (`C:\Users\lawto\aios`), Chalk embedded as the note-taking feature (with notebooks, sections and pages managed from Atlas's own sidebar), and a terminal dock with a one-click Claude Code session. Dashboards come later.
+Atlas is the name of Ben's AI operating system. This repo is its front end: a home page, a read-only browser for the brain (`C:\Users\lawto\aios`), Chalk embedded as the note-taking feature (with notebooks, sections and pages managed from Atlas's own sidebar), and a terminal dock with a one-click Claude Code session. Home is a dashboard (this week's calendar, portfolio, daily briefing, recent files and notes); `/calendar` and `/portfolio` are full views. They show "not connected" until calendar and brokerage connectors are added behind `/api/calendar`, `/api/portfolio` and `/api/briefing` (D37). A left rail switches views, Ctrl+K jumps to any view, note or brain file, and Ctrl+\ hides the notes/brain sidebar.
 
 Stack: React + TypeScript + Vite, FastAPI, one Docker image, plus a small Go program (the terminal bridge) that runs on Windows. Same patterns as Chalk.
 
