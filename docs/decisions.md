@@ -16,13 +16,13 @@ Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, 
   - The app's own API calls go through the Atlas backend, so a single origin can be exposed later.
   - The port binds to `127.0.0.1` until remote access, and authentication with it, is designed.
   - Chalk calls its API at absolute `/api` paths. Serving it under Atlas's origin later (for example at `/chalk/`) needs a base-path change in Chalk; until then the iframe points at Chalk's own port.
-  - Chalk's terminal bridge (a shell on the host) is never exposed remotely.
+  - The terminal bridge (a shell on the host, D25) is never exposed remotely.
 - **D11. Look: Chalk's dark theme and green accent,** so the two feel like one product.
 - **D12. Real URLs** (`/`, `/atlas/<path>`, `/notes/<board id>`) so back, forward, refresh and links work.
 - **D13. The embed contract between Atlas and Chalk.** Both repos code to this; changing it means changing both.
   - **URL:** `<chalk>/?board=<id>&embed=1`. The `board` parameter also works in standalone Chalk. An unknown id falls back to the normal start page and shows a toast. `embed=1` starts with the notebook sidebar closed; everything else stays as it is.
-  - **Messages from Atlas to Chalk:** `{source:'atlas', type:'chalk:set-sidebar', open:boolean}`, `{source:'atlas', type:'chalk:toggle-sidebar'}`, `{source:'atlas', type:'chalk:open-board', id}`.
-  - **Messages from Chalk to Atlas** (to `window.parent`, only when embedded): `{source:'chalk', type:'chalk:ready'}`, `{source:'chalk', type:'chalk:sidebar', open}` on every change, and `{source:'chalk', type:'chalk:board', id, name}` whenever the open board changes, so Atlas's URL and tree follow.
+  - **Messages from Atlas to Chalk:** `{source:'atlas', type:'chalk:set-sidebar', open:boolean}`, `{source:'atlas', type:'chalk:toggle-sidebar'}`, `{source:'atlas', type:'chalk:open-board', id}`, and (added 2026-11-02, D24) `{source:'atlas', type:'chalk:library-changed'}` after Atlas creates, renames or deletes anything, so Chalk reloads its tree.
+  - **Messages from Chalk to Atlas** (to `window.parent`, only when embedded): `{source:'chalk', type:'chalk:ready'}`, `{source:'chalk', type:'chalk:sidebar', open}` on every change, and `{source:'chalk', type:'chalk:board', id, name}` whenever the open board changes, so Atlas's URL and tree follow. Added 2026-11-02 (D24): `{source:'chalk', type:'chalk:library-changed'}` after Chalk's own sidebar changes the library, and `{source:'chalk', type:'chalk:toggle-terminal'}` when Ctrl+` is pressed inside embedded Chalk.
   - **Origins:** each side checks `event.origin`. Chalk accepts messages only from `CHALK_EMBED_ORIGINS` (env, comma-separated, default `http://localhost:8090,http://127.0.0.1:8090`), exposed through Chalk's `/api/config`. Chalk sends `Content-Security-Policy: frame-ancestors 'self' <those origins>`, so no other site can frame it; it has a terminal. Atlas accepts messages only from the origin of `CHALK_PUBLIC_URL`.
 - **D14. Addresses and ports.**
   - Atlas prod: `${ATLAS_BIND:-127.0.0.1}:8090`. Atlas dev: API `127.0.0.1:8001`, web `127.0.0.1:5174`, so they don't collide with Chalk dev on 8000/5173.
@@ -38,3 +38,23 @@ Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, 
 - **D18. `/api/atlas/tree` returns `{ sections: [...] }`; each node is `{name, path, type: 'dir'|'file', children?, kind?}`.** `/api/config` also reflects `ATLAS_BRAIN_LABEL` (set from `AIOS_DIR` by compose) as `brainLabel`.
 - **D19. The iframe `src` is fixed for the lifetime of a Notes view; page changes go through `chalk:open-board`.** Atlas also ignores messages whose `event.source` is not the iframe window, on top of the origin check.
 - **D20. The Chalk library is re-fetched when the browser window regains focus,** so new pages appear without a reload.
+
+## Round 2 (2026-11-02): notes management, sidebar look, terminal
+
+- **D21. Notes are managed from Atlas through Chalk's API.** The Atlas sidebar can create, rename and delete notebooks, sections and pages: the same set Chalk's sidebar offers (hover "+" to add, "More" menu with Rename and a two-step Delete). The Atlas backend proxies only a fixed list of Chalk endpoints: `POST /api/notebooks`, `PUT|DELETE /api/notebooks/{nb}`, `POST /api/notebooks/{nb}/sections`, `PUT|DELETE /api/notebooks/{nb}/sections/{sec}`, `POST /api/boards` (only `name`, `notebook`, `section`, never `scene`), `PUT /api/boards/{id}` (only `name`) and `DELETE /api/boards/{id}`. Why: Chalk stays the only code that writes the library, and Atlas can't touch page contents. D6 (the brain is read-only) is unchanged.
+- **D22. Write requests are protected against cross-site use.** Every mutating Atlas endpoint requires a JSON body and an `Origin` header from `ATLAS_ORIGINS` (default `http://localhost:8090,http://127.0.0.1:8090,http://localhost:5174,http://127.0.0.1:5174`); anything else gets 403. Atlas sends no CORS headers. Why: another website open in the same browser must not be able to make Atlas delete notes, and this is required anyway before remote access (D10).
+- **D23. The Atlas sidebar looks and behaves like Chalk's.** It uses Chalk's sidebar tokens and classes (`--sb-*`, `.sb-*`), icons, hover add and more buttons, inline rename, two-step delete, keyboard tree navigation and current-page highlight. The brain tree uses the same styling, read-only (no add or more buttons). The code is copied from Chalk; Atlas still never imports Chalk code (D3).
+- **D24. Atlas and embedded Chalk stay in sync.** D13 gained `chalk:library-changed` in both directions and `chalk:toggle-terminal` from Chalk. If the open page is deleted from Atlas, Atlas goes Home. A page created from Atlas opens right away.
+- **D25. The terminal belongs to Atlas, not Chalk.**
+  - The Go bridge moves from Chalk's `bridge/` to Atlas's `bridge/` and is renamed `atlas-terminal`. The code is the same, and so is the security model: loopback only, `Origin` and `Host` allowlists, profile ids only, at most 16 sessions.
+  - Defaults: `127.0.0.1:7681`; allowed origins are Atlas prod and dev; config in `%USERPROFILE%\.atlas\terminal.json`.
+  - Chalk's terminal panel, bridge and their tests are removed from Chalk.
+  - The accepted host exception (a program running on Windows) moves with it.
+  - Why: the terminal is a platform tool, useful from any view, not a whiteboard feature.
+- **D26. The terminal dock is global.** It's a bottom dock under the main pane on every route, toggled from a top-bar button and Ctrl+` (also forwarded from embedded Chalk, D24). Sessions survive navigation. The rest works as in Chalk's panel: tabs, +, profile picker, hide, kill all, drag to resize, restart after exit, and remembered size and open state.
+- **D27. A "Claude" button starts Claude Code in the brain.**
+  - It opens a session with the built-in profile `claude`. The command is `claude` from PATH if present, otherwise the newest bundled `claude.exe` from the VS Code extension (`%USERPROFILE%\.vscode\extensions\anthropic.claude-code-*\resources\native-binary\claude.exe`). Nothing gets installed.
+  - The working folder is the brain (default `~/aios`). A `claude` profile in `terminal.json` overrides it.
+  - The profile is listed only when a binary is found; otherwise the button is disabled and explains why.
+  - Why: orchestration starts in the brain (its `CLAUDE.md`).
+- **D28. The terminal address is config and stays local.** `ATLAS_TERMINAL_URL` (default `http://127.0.0.1:7681`) reaches the browser through `/api/config`. Once Atlas is reachable from other devices (D10), the dock is disabled for non-loopback clients, and the bridge never listens beyond loopback.

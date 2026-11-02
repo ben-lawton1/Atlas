@@ -11,6 +11,18 @@ Opus plans and reviews, Sonnet codes. Each slice is one or more commits on `feat
 | 5 | Home v0 per D9 | done |
 | 6 | End-to-end tests, README, CLAUDE.md, docs | done |
 
+## Round 2 (2026-11-02): branch `feat/atlas-v1` (Atlas) and `feat/atlas-sync` (Chalk)
+
+| # | Slice | Status |
+|---|---|---|
+| 7 | Notes write proxy (D21) with the Origin/JSON guard (D22) and tests | planned |
+| 8 | Sidebar ported from Chalk (D23): look, add buttons, More menu, inline rename, two-step delete, keyboard; brain tree restyled | planned |
+| 9 | Sync with embedded Chalk (D24): library-changed both ways, open new page, go Home when the open page is deleted | planned |
+| 10 | Bridge moved into Atlas as `atlas-terminal` (D25), with the `claude` built-in profile (D27) and Atlas origins | planned |
+| 11 | Global terminal dock (D26, D28) with the Claude button | planned |
+| 12 | Chalk: terminal removed, D24 messages added (Chalk repo) | planned |
+| 13 | e2e for all of the above; README, CLAUDE.md, plan status | planned |
+
 ## Not yet done / next
 
 - Ben's hands-on check, then merge `feat/atlas-v0` and Chalk's `feat/embed` to `main`.
