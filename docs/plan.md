@@ -44,7 +44,7 @@ Decisions D35–D40. Four Sonnet agents in parallel, each owning its own files; 
 | 16 | Dashboard UI: week calendar, portfolio panel, briefing panel, `/calendar` and `/portfolio` views | done |
 | 17 | Shell: rail, top bar with command box (Ctrl+K), Ctrl+\ sidebar toggle, routes, new Home, e2e | done |
 
-Checks 2026-11-02 (all in Docker): backend 141 passed, frontend 81 unit tests passed, e2e 31/31. Not yet looked at by Ben in the running app.
+Checks 2026-11-02 (all in Docker): backend 141 passed, frontend 81 unit tests passed, e2e 31/31. Ben checked rounds 2 and 3 in the running app on 2026-11-02; both merged to `main` (with Chalk's `feat/atlas-sync`) and pushed.
 
 Next for round 3:
 - **Connectors.** Calendar sources first: Google Calendar (personal) and Microsoft 365 (Hyper, not authorized yet). Then a brokerage API for the portfolio. Decide whether sources call the APIs live or read rows that a sync (a Claude MCP run or a module) writes into `state/` (the guard already keeps `*.sqlite` from being served).
@@ -54,7 +54,5 @@ Next for round 3:
 
 ## Not yet done / next
 
-- **Bridge switch:** Ben closes `chalk-terminal.exe` and starts `atlas-terminal.exe` on the default `127.0.0.1:7681`; then recreate the Atlas container without the temporary `ATLAS_TERMINAL_URL=http://127.0.0.1:7682` override.
 - **Running bridge locks its build:** `bridge/dist/atlas-terminal.exe` is locked while it runs, so `bridge-build` fails then. Consider running a copy from a stable folder.
-- **Merge:** after Ben's hands-on check, merge `feat/atlas-v1` and Chalk's `feat/atlas-sync` to `main` and push.
 - Dashboards, remote access and authentication (D10).
