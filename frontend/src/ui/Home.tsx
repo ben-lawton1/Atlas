@@ -1,17 +1,27 @@
 import { api, allPages, formatWhen } from '../api';
+import { startOfWeek } from '../calendar';
 import { atlasHref, linkClick, notesHref } from '../router';
 import { useAsync, type LibraryState } from '../state';
+import { BriefingPanel } from './dashboards/BriefingPanel';
+import { PortfolioPanel } from './dashboards/PortfolioPanel';
+import { WeekCalendar } from './dashboards/WeekCalendar';
 
 export function Home({ library, chalkUrl }: { library: LibraryState; chalkUrl: string | null }) {
   const recent = useAsync(() => api.recent(8), 'recent');
-  const today = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const pages = library.status === 'ok' ? allPages(library.data).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8) : [];
 
   return (
     <div className="pane-scroll">
       <div className="home" data-testid="home">
-        <h1>Atlas</h1>
-        <p className="muted" data-testid="home-date">{today}</p>
+        <WeekCalendar
+          start={startOfWeek(new Date())}
+          title="This week"
+          actions={<a className="btn" href="/calendar" onClick={(e) => linkClick(e, '/calendar')}>Open calendar</a>}
+        />
+        <div className="home-row">
+          <PortfolioPanel compact />
+          <BriefingPanel />
+        </div>
         <div className="cards">
           <section className="card" data-testid="card-recent-atlas">
             <h2>Recently changed in Atlas</h2>
@@ -50,10 +60,6 @@ export function Home({ library, chalkUrl }: { library: LibraryState; chalkUrl: s
                 })}
               </ul>
             )}
-          </section>
-          <section className="card" data-testid="card-dashboards">
-            <h2>Dashboards</h2>
-            <p className="muted">Coming soon.</p>
           </section>
         </div>
       </div>

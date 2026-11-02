@@ -6,10 +6,18 @@ async function openAbout(page: Page) {
   await page.locator('[data-testid="atlas-file"][data-path="entities/personal/about.md"]').click();
 }
 
-test('home loads with both cards and the dashboards placeholder', async ({ page }) => {
+test('home shows the dashboard panels and both recent cards', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Atlas', level: 1 })).toBeVisible();
+  await expect(page.getByTestId('home')).toBeVisible();
   await expect(page.getByTestId('home-date')).not.toBeEmpty();
+  await expect(page.getByTestId('card-dashboards')).toHaveCount(0);
+  // dashboards with their not-connected notices (D37)
+  await expect(page.getByTestId('week-calendar')).toBeVisible();
+  await expect(page.getByTestId('calendar-status')).toContainText('No calendar connected yet');
+  await expect(page.getByTestId('portfolio-panel')).toBeVisible();
+  await expect(page.getByTestId('portfolio-status')).toContainText('Not connected');
+  await expect(page.getByTestId('briefing-panel')).toBeVisible();
+  await expect(page.getByTestId('briefing-panel')).toContainText('No briefing yet');
   const atlasCard = page.getByTestId('card-recent-atlas');
   await expect(atlasCard.getByRole('heading', { name: 'Recently changed in Atlas' })).toBeVisible();
   await expect(atlasCard.locator('a').first()).toBeVisible();
@@ -17,11 +25,126 @@ test('home loads with both cards and the dashboards placeholder', async ({ page 
   await expect(notesCard.getByRole('heading', { name: 'Recent notes' })).toBeVisible();
   await expect(notesCard.getByRole('link', { name: /Page Two/ })).toBeVisible();
   await expect(notesCard.getByRole('link', { name: /Page One/ })).toBeVisible();
-  await expect(page.getByTestId('card-dashboards')).toContainText('Coming soon');
   // forbidden files never show up as recent
   await expect(atlasCard).not.toContainText('.env');
   await expect(atlasCard).not.toContainText('sqlite');
   await expect(atlasCard).not.toContainText('raw/');
+});
+
+test('rail navigates to calendar and portfolio; deep links survive a refresh', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-current', 'page');
+  await page.getByTestId('rail-calendar').click();
+  await expect(page).toHaveURL(/\/calendar$/);
+  await expect(page.getByTestId('calendar-view')).toBeVisible();
+  await expect(page.getByTestId('rail-calendar')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('rail-home')).not.toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('view-title')).toHaveText('Calendar');
+  await page.reload();
+  await expect(page.getByTestId('calendar-view')).toBeVisible();
+  await expect(page.getByTestId('rail-calendar')).toHaveAttribute('aria-current', 'page');
+
+  await page.getByTestId('rail-portfolio').click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.getByTestId('portfolio-view')).toBeVisible();
+  await expect(page.getByTestId('rail-portfolio')).toHaveAttribute('aria-current', 'page');
+  await page.reload();
+  await expect(page.getByTestId('portfolio-view')).toBeVisible();
+
+  await page.getByTestId('rail-brain').click();
+  await expect(page).toHaveURL(/\/atlas$/);
+  await expect(page.getByTestId('rail-brain')).toHaveAttribute('aria-current', 'page');
+  await page.getByTestId('rail-notes').click();
+  await expect(page).toHaveURL(/\/notes$/);
+  await expect(page.getByTestId('rail-notes')).toHaveAttribute('aria-current', 'page');
+  await page.getByTestId('rail-home').click();
+  await expect(page.getByTestId('home')).toBeVisible();
+});
+
+test('calendar week navigation: previous, next and today', async ({ page }) => {
+  await page.goto('/calendar');
+  const days = page.getByTestId('calendar-day');
+  await expect(days).toHaveCount(7);
+  const dates = async () => days.evaluateAll((els) => els.map((e) => e.getAttribute('data-date')));
+  const thisWeek = await dates();
+  const view = page.getByTestId('calendar-view');
+  await expect(view.getByRole('heading', { name: 'This week' })).toBeVisible();
+  await expect(view.getByRole('button', { name: 'Today' })).toBeDisabled();
+
+  await view.getByRole('button', { name: 'Next week' }).click();
+  await expect(view.getByRole('heading', { name: 'Next week' })).toBeVisible();
+  await expect.poll(dates).not.toEqual(thisWeek);
+  const next = await dates();
+  expect(new Date(`${next[0]}T00:00:00Z`).getTime() - new Date(`${thisWeek[0]}T00:00:00Z`).getTime()).toBe(7 * 86_400_000);
+
+  await view.getByRole('button', { name: 'Previous week' }).click();
+  await view.getByRole('button', { name: 'Previous week' }).click();
+  await expect(view.getByRole('heading', { name: 'Last week' })).toBeVisible();
+  await expect.poll(dates).not.toEqual(thisWeek);
+
+  await view.getByRole('button', { name: 'Today' }).click();
+  await expect(view.getByRole('heading', { name: 'This week' })).toBeVisible();
+  await expect.poll(dates).toEqual(thisWeek);
+});
+
+test('invalid calendar parameters are rejected', async ({ request }) => {
+  expect((await request.get('/api/calendar?start=bad')).status()).toBe(422);
+  expect((await request.get('/api/calendar?start=2026-11-02&days=0')).status()).toBe(422);
+  expect((await request.get('/api/calendar?start=2026-11-02')).status()).toBe(200);
+});
+
+test('Ctrl+Backslash toggles the sidebar and the choice survives a reload', async ({ page }) => {
+  await page.goto('/');
+  const sidebar = page.getByTestId('sidebar');
+  await expect(sidebar).toHaveAttribute('data-open', 'true');
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toHaveAttribute('data-open', 'false');
+  await expect(page.getByTestId('nav-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await page.reload();
+  await expect(sidebar).toHaveAttribute('data-open', 'false');
+  await page.getByTestId('nav-toggle').click();
+  await expect(sidebar).toHaveAttribute('data-open', 'true');
+  await page.reload();
+  await expect(sidebar).toHaveAttribute('data-open', 'true');
+  // Notes and Brain in the rail reveal a hidden sidebar
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toHaveAttribute('data-open', 'false');
+  await page.getByTestId('rail-brain').click();
+  await expect(sidebar).toHaveAttribute('data-open', 'true');
+});
+
+test('command box: Ctrl+K focuses, jumps to a note page and to a brain file', async ({ page }) => {
+  await page.goto('/');
+  const box = page.getByTestId('command-box');
+  await page.locator('body').click({ position: { x: 5, y: 5 } });
+  await page.keyboard.press('Control+k');
+  await expect(box).toBeFocused();
+  // an empty query lists the views
+  await expect(page.getByTestId('command-result')).toHaveCount(5);
+  await box.fill('Page One');
+  await expect(page.getByTestId('command-result').first()).toContainText('Page One');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/notes\/p1$/);
+  await expect(box).toHaveValue('');
+
+  await page.keyboard.press('Control+k');
+  await box.fill('about.md');
+  await expect(page.getByTestId('command-result').first()).toContainText('entities/personal/about.md');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/atlas\/entities\/personal\/about\.md$/);
+
+  // arrow keys, Escape and click
+  await page.keyboard.press('Control+k');
+  await box.fill('o');
+  await page.keyboard.press('ArrowDown');
+  await expect(box).toHaveAttribute('aria-activedescendant', 'cmd-opt-1');
+  await page.keyboard.press('Escape');
+  await expect(box).toHaveValue('');
+  await expect(box).not.toBeFocused();
+  await page.keyboard.press('Control+k');
+  await box.fill('calendar');
+  await page.getByTestId('command-result').first().click();
+  await expect(page).toHaveURL(/\/calendar$/);
 });
 
 test('open a brain markdown file from the tree, follow relative links, refresh and go back', async ({ page }) => {
@@ -109,7 +232,7 @@ test('open a note page: iframe shows the stub; sidebar toggle; switching pages k
 test('Home button returns home', async ({ page }) => {
   await page.goto('/notes/p1');
   await expect(page.frameLocator('[data-testid="notes-frame"]').locator('#board-id')).toHaveText('p1');
-  await page.getByTestId('home-button').click();
+  await page.getByTestId('rail-home').click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('home')).toBeVisible();
   await expect(page.getByTestId('notes-frame')).toHaveCount(0);
@@ -135,4 +258,14 @@ test('narrow screens: the left panel is collapsible', async ({ page }) => {
   await page.getByTestId('note-page').filter({ hasText: 'Page One' }).click();
   await expect(page).toHaveURL(/\/notes\/p1$/);
   await expect(page.getByTestId('sidebar')).toBeHidden();
+});
+
+test('phone width: the views do not scroll sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  for (const path of ['/', '/calendar', '/portfolio']) {
+    await page.goto(path);
+    await expect(page.getByTestId('rail')).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, path).toBeLessThanOrEqual(0);
+  }
 });

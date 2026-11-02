@@ -243,7 +243,7 @@ test('TRM-2: sessions survive navigation Home -> brain file -> note', async ({ p
   await expect(tabs(page)).toHaveCount(1);
   await expect(activeRows(page)).toContainText('keep-42');
 
-  await page.getByTestId('home-button').click();
+  await page.getByTestId('rail-home').click();
   await expect(page.getByTestId('home')).toBeVisible();
   await expect(activeRows(page)).toContainText('keep-42');
 });

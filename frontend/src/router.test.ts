@@ -12,6 +12,10 @@ describe('parseRoute', () => {
     expect(parseRoute('/atlas')).toEqual({ name: 'atlas', path: null });
     expect(parseRoute('/atlas/')).toEqual({ name: 'atlas', path: null });
   });
+  it('parses calendar and portfolio', () => {
+    expect(parseRoute('/calendar')).toEqual({ name: 'calendar' });
+    expect(parseRoute('/portfolio/')).toEqual({ name: 'portfolio' });
+  });
   it('parses notes', () => {
     expect(parseRoute('/notes/D9oZeaWacSE')).toEqual({ name: 'notes', boardId: 'D9oZeaWacSE' });
     expect(parseRoute('/notes')).toEqual({ name: 'notes', boardId: null });
@@ -28,5 +32,7 @@ describe('hrefs', () => {
     }
     expect(parseRoute(notesHref('ab/c d'))).toEqual({ name: 'notes', boardId: 'ab/c d' });
     expect(routeHref({ name: 'home' })).toBe('/');
+    expect(routeHref({ name: 'calendar' })).toBe('/calendar');
+    expect(routeHref({ name: 'portfolio' })).toBe('/portfolio');
   });
 });

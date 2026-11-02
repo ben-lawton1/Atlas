@@ -218,7 +218,7 @@ export async function newTab(profileId?: string): Promise<void> {
   term.onResize(({ cols, rows }) => rt.session?.resize(cols, rows));
   term.attachCustomKeyEventHandler((e) => {
     if (e.type !== 'keydown') return true;
-    if (e.ctrlKey && e.code === 'Backquote') return false; // global toggle, handled by keyboard.ts
+    if (e.ctrlKey && (e.code === 'Backquote' || e.code === 'Backslash')) return false; // global toggles, handled by window listeners
     if ((e.ctrlKey || e.metaKey) && !e.altKey && e.code === 'KeyC' && term.hasSelection()) {
       copyText(term.getSelection());
       term.clearSelection();
