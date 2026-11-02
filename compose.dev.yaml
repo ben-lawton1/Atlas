@@ -1,0 +1,32 @@
+name: atlas-dev
+services:
+  api:
+    image: atlas-api-dev:local
+    build:
+      context: .
+      target: api-dev
+    environment:
+      CHALK_API_URL: ${CHALK_API_URL:-http://host.docker.internal:8080}
+      CHALK_PUBLIC_URL: ${CHALK_PUBLIC_URL:-http://localhost:8080}
+      ATLAS_BRAIN_LABEL: ${AIOS_DIR:-C:/Users/lawto/aios}
+    volumes:
+      - ./backend/app:/app/app
+      - ${AIOS_DIR:-C:/Users/lawto/aios}:/aios:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8001:8000"
+  web:
+    image: atlas-web-dev:local
+    build:
+      context: .
+      target: web-dev
+    environment:
+      ATLAS_API_PROXY: http://api:8000
+    volumes:
+      - ./frontend:/web
+      - /web/node_modules
+    ports:
+      - "127.0.0.1:5174:5174"
+    depends_on:
+      - api

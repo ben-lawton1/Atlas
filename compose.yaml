@@ -1,0 +1,25 @@
+name: atlas
+services:
+  app:
+    image: atlas-app:local
+    build:
+      context: .
+      target: runtime
+    ports:
+      - "${ATLAS_BIND:-127.0.0.1}:8090:8000"
+    environment:
+      CHALK_API_URL: ${CHALK_API_URL:-http://host.docker.internal:8080}
+      CHALK_PUBLIC_URL: ${CHALK_PUBLIC_URL:-http://localhost:8080}
+      ATLAS_BRAIN_LABEL: ${AIOS_DIR:-C:/Users/lawto/aios}
+    volumes:
+      - ${AIOS_DIR:-C:/Users/lawto/aios}:/aios:ro   # D6: the brain is read-only
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+      start_interval: 1s
+    restart: unless-stopped
