@@ -24,7 +24,7 @@ def create_app(
     chalk_api_url = chalk_api_url or os.environ.get("CHALK_API_URL", "http://host.docker.internal:8080")
     chalk_public_url = chalk_public_url or os.environ.get("CHALK_PUBLIC_URL", "http://localhost:8080")
     brain_label = brain_label or os.environ.get("ATLAS_BRAIN_LABEL") or brain_dir
-    allowed_origins = parse_origins(origins if origins is not None else os.environ.get("ATLAS_ORIGINS", DEFAULT_ORIGINS))
+    allowed_origins = parse_origins(origins if origins is not None else os.environ.get("ATLAS_ORIGINS") or DEFAULT_ORIGINS)
     terminal_url = terminal_url or os.environ.get("ATLAS_TERMINAL_URL", "http://127.0.0.1:7681")
 
     app = FastAPI(title="Atlas", version="0.1.0")

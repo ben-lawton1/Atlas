@@ -15,6 +15,8 @@ describe('parseChalkMessage', () => {
     expect(parseChalkMessage(O, { source: 'chalk', type: 'chalk:ready' }, O)).toEqual({ type: 'chalk:ready' });
     expect(parseChalkMessage(O, { source: 'chalk', type: 'chalk:sidebar', open: true }, O)).toEqual({ type: 'chalk:sidebar', open: true });
     expect(parseChalkMessage(O, { source: 'chalk', type: 'chalk:board', id: 'abc', name: 'N' }, O)).toEqual({ type: 'chalk:board', id: 'abc', name: 'N' });
+    expect(parseChalkMessage(O, { source: 'chalk', type: 'chalk:library-changed' }, O)).toEqual({ type: 'chalk:library-changed' });
+    expect(parseChalkMessage(O, { source: 'chalk', type: 'chalk:toggle-terminal' }, O)).toEqual({ type: 'chalk:toggle-terminal' });
   });
   it('drops messages from any other origin', () => {
     const msg = { source: 'chalk', type: 'chalk:board', id: 'abc' };
@@ -39,5 +41,6 @@ describe('toChalk', () => {
   it('tags outgoing messages with source atlas', () => {
     expect(toChalk({ type: 'chalk:toggle-sidebar' })).toEqual({ source: 'atlas', type: 'chalk:toggle-sidebar' });
     expect(toChalk({ type: 'chalk:open-board', id: 'x' })).toEqual({ source: 'atlas', type: 'chalk:open-board', id: 'x' });
+    expect(toChalk({ type: 'chalk:library-changed' })).toEqual({ source: 'atlas', type: 'chalk:library-changed' });
   });
 });

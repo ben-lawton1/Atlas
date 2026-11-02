@@ -5,3 +5,5 @@ e2e
 docs
 .env
 frontend/dist
+bridge
+stub

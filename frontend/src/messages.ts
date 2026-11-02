@@ -3,12 +3,15 @@
 export type ChalkMessage =
   | { type: 'chalk:ready' }
   | { type: 'chalk:sidebar'; open: boolean }
-  | { type: 'chalk:board'; id: string; name?: string };
+  | { type: 'chalk:board'; id: string; name?: string }
+  | { type: 'chalk:library-changed' }
+  | { type: 'chalk:toggle-terminal' };
 
 export type AtlasMessage =
   | { type: 'chalk:set-sidebar'; open: boolean }
   | { type: 'chalk:toggle-sidebar' }
-  | { type: 'chalk:open-board'; id: string };
+  | { type: 'chalk:open-board'; id: string }
+  | { type: 'chalk:library-changed' };
 
 export function originOf(url: string): string | null {
   try {
@@ -33,6 +36,10 @@ export function parseChalkMessage(origin: string, data: unknown, expectedOrigin:
     case 'chalk:board':
       if (typeof d.id !== 'string' || d.id === '') return null;
       return { type: 'chalk:board', id: d.id, name: typeof d.name === 'string' ? d.name : undefined };
+    case 'chalk:library-changed':
+      return { type: 'chalk:library-changed' };
+    case 'chalk:toggle-terminal':
+      return { type: 'chalk:toggle-terminal' };
     default:
       return null;
   }
@@ -41,3 +48,6 @@ export function parseChalkMessage(origin: string, data: unknown, expectedOrigin:
 export function toChalk(msg: AtlasMessage): { source: 'atlas' } & AtlasMessage {
   return { source: 'atlas', ...msg };
 }
+
+/** Window event Atlas raises after it changed the library (D24); the notes view forwards it to the embedded Chalk. */
+export const LIBRARY_CHANGED_EVENT = 'atlas:library-changed';

@@ -1,0 +1,21 @@
+/** data-testid values of the terminal dock (used by the e2e specs). */
+export const TID = {
+  terminalButton: 'terminal-button',
+  terminalPanel: 'terminal-panel',
+  terminalResize: 'terminal-resize',
+  terminalTabs: 'terminal-tabs',
+  terminalTab: 'terminal-tab',
+  terminalTabClose: 'terminal-tab-close',
+  terminalNew: 'terminal-new',
+  terminalClaude: 'terminal-claude',
+  terminalProfiles: 'terminal-profiles',
+  terminalMenu: 'terminal-menu',
+  terminalProfile: 'terminal-profile',
+  terminalKillAll: 'terminal-kill-all',
+  terminalMinimise: 'terminal-minimise',
+  terminalHost: 'terminal-host',
+  terminalEnded: 'terminal-ended',
+  terminalRestart: 'terminal-restart',
+  terminalOffline: 'terminal-offline',
+  terminalRetry: 'terminal-retry',
+} as const;

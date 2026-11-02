@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, type AtlasNode, type Config } from '../api';
-import { linkClick, useRoute } from '../router';
+import { LIBRARY_CHANGED_EVENT } from '../messages';
+import { createNotesActions } from '../notesActions';
+import { linkClick, navigate, useRoute } from '../router';
 import { useLibrary } from '../state';
 import { FilePreview } from './FilePreview';
 import { Home } from './Home';
 import { NotesView } from './NotesView';
 import { Sidebar } from './Sidebar';
+import { TerminalButton, TerminalPanel } from './terminal/TerminalPanel';
+import { Toast } from './Toast';
 
 const NARROW = '(max-width: 760px)';
 
@@ -29,6 +33,21 @@ export function App() {
 
   const chalkUrl = config?.chalkPublicUrl ?? null;
 
+  // Notes management (D21, D24). The actions read the live route through a ref so they never act on a stale one.
+  const boardRef = useRef<string | null>(null);
+  boardRef.current = route.name === 'notes' ? route.boardId : null;
+  const actions = useMemo(
+    () =>
+      createNotesActions({
+        api,
+        refresh: reload,
+        announce: () => window.dispatchEvent(new Event(LIBRARY_CHANGED_EVENT)),
+        navigate: (href) => navigate(href),
+        currentBoardId: () => boardRef.current,
+      }),
+    [reload],
+  );
+
   return (
     <div className="app">
       <header className="topbar">
@@ -46,6 +65,7 @@ export function App() {
         <a className="btn" href="/" data-testid="home-button" onClick={(e) => linkClick(e, '/')}>Home</a>
         <span className="spacer" />
         {config && <span className="muted brain-label" title="Brain folder">{config.brainLabel}</span>}
+        <TerminalButton />
       </header>
       <div className="body">
         <Sidebar
@@ -54,8 +74,9 @@ export function App() {
           chalkUrl={chalkUrl}
           tree={tree}
           treeError={treeError}
-          onRetryLibrary={reload}
+          onRetryLibrary={() => void reload()}
           open={navOpen}
+          actions={actions}
         />
         {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
         <main className="main">
@@ -74,12 +95,15 @@ export function App() {
                 boardId={route.boardId}
                 chalkUrl={chalkUrl}
                 library={library.status === 'ok' ? library.data : null}
+                onLibraryChanged={() => void reload()}
               />
             ) : (
               <div className="pane-scroll"><p className="muted">Loading…</p></div>
             ))}
+          <TerminalPanel />
         </main>
       </div>
+      <Toast />
     </div>
   );
 }

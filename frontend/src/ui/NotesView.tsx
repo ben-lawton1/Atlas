@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { allPages, type Library } from '../api';
-import { originOf, parseChalkMessage, toChalk, type AtlasMessage } from '../messages';
+import { LIBRARY_CHANGED_EVENT, originOf, parseChalkMessage, toChalk, type AtlasMessage } from '../messages';
 import { navigate, notesHref } from '../router';
+import { toggleTerminal } from './terminal/terminalStore';
 
-export function NotesView({ boardId, chalkUrl, library }: { boardId: string; chalkUrl: string; library: Library | null }) {
+export function NotesView({ boardId, chalkUrl, library, onLibraryChanged }: { boardId: string; chalkUrl: string; library: Library | null; onLibraryChanged: () => void }) {
   const origin = originOf(chalkUrl);
   const frame = useRef<HTMLIFrameElement>(null);
   const initial = useRef(boardId); // the iframe src is fixed for this mount; later pages go through postMessage
@@ -38,6 +39,10 @@ export function NotesView({ boardId, chalkUrl, library }: { boardId: string; cha
           reported.current = latest.current;
           post({ type: 'chalk:open-board', id: latest.current });
         }
+      } else if (msg.type === 'chalk:library-changed') {
+        onLibraryChanged();
+      } else if (msg.type === 'chalk:toggle-terminal') {
+        toggleTerminal();
       } else if (msg.type === 'chalk:sidebar') {
         setSidebarOpen(msg.open);
       } else if (msg.type === 'chalk:board') {
@@ -48,7 +53,14 @@ export function NotesView({ boardId, chalkUrl, library }: { boardId: string; cha
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [origin, post]);
+  }, [origin, post, onLibraryChanged]);
+
+  // Atlas changed the library (D24): tell the embedded Chalk to reload its tree.
+  useEffect(() => {
+    const onLocal = () => post({ type: 'chalk:library-changed' });
+    window.addEventListener(LIBRARY_CHANGED_EVENT, onLocal);
+    return () => window.removeEventListener(LIBRARY_CHANGED_EVENT, onLocal);
+  }, [post]);
 
   if (!origin) return <p className="notice" role="alert">Chalk's address isn't a valid URL: {chalkUrl}</p>;
 
