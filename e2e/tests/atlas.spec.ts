@@ -68,7 +68,9 @@ test('forbidden files are not reachable', async ({ page, request }) => {
   await expect(page.getByTestId('preview-error')).toBeVisible();
   // and they are absent from the tree
   await page.goto('/');
-  await page.getByRole('button', { name: 'intake', exact: true }).click();
+  // the tree remembers that the previous page opened intake/, so only expand it when it is collapsed
+  const intake = page.getByRole('button', { name: 'intake', exact: true });
+  if ((await intake.locator('xpath=ancestor::li[1]').getAttribute('aria-expanded')) !== 'true') await intake.click();
   await expect(page.locator('[data-testid="atlas-file"][data-path="intake/README.md"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'raw', exact: true })).toHaveCount(0);
 });

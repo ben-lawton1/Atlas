@@ -58,3 +58,12 @@ Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, 
   - The profile is listed only when a binary is found; otherwise the button is disabled and explains why.
   - Why: orchestration starts in the brain (its `CLAUDE.md`).
 - **D28. The terminal address is config and stays local.** `ATLAS_TERMINAL_URL` (default `http://127.0.0.1:7681`) reaches the browser through `/api/config`. Once Atlas is reachable from other devices (D10), the dock is disabled for non-loopback clients, and the bridge never listens beyond loopback.
+
+## Proposed by implementer (round 2)
+
+- **D29. The notes write routes live under `/api/notes/`.** Notebooks `POST /api/notes/notebooks`, `PUT|DELETE /api/notes/notebooks/{nb}`, sections under `/api/notes/notebooks/{nb}/sections[/{sec}]`, pages `POST /api/notes/boards`, `PUT|DELETE /api/notes/boards/{id}`. Create-page responses have `scene` stripped. Why: one prefix beside the existing `GET /api/notes/library`, mirroring Chalk's paths.
+- **D30. An unset or empty `ATLAS_ORIGINS` falls back to the D22 default list.** Why: compose passes the variable through, and an empty string must not lock every write out.
+- **D31. Atlas remembers its sidebar state in `localStorage['atlas:sidebar']` and the dock state in `atlas:terminal`.** The first ever visit opens every notebook and section; after that the user's state wins, and opening a page or file reveals its ancestors. Why: matches Chalk, and the notes tree must show pages without clicks on first use.
+- **D32. Renaming a notebook keeps its sections expanded** (Chalk loses that state because section keys embed the notebook name). A new notebook creates a first section "Quick Notes" and a first page, like Chalk.
+- **D33. The Claude button is only in the dock header and stays enabled while the bridge is unknown or offline;** it is disabled only when a running bridge doesn't list a `claude` profile. Clicking it with the bridge offline opens the dock, which explains how to start it.
+- **D34. The test stack's fake `claude` profile is `sh /etc/atlas-test/fake-claude.sh`,** which prints `CLAUDE-STUB`; the e2e checks the button end to end without Claude Code.

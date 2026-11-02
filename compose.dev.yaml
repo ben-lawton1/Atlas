@@ -9,6 +9,8 @@ services:
       CHALK_API_URL: ${CHALK_API_URL:-http://host.docker.internal:8080}
       CHALK_PUBLIC_URL: ${CHALK_PUBLIC_URL:-http://localhost:8080}
       ATLAS_BRAIN_LABEL: ${AIOS_DIR:-C:/Users/lawto/aios}
+      ATLAS_ORIGINS: ${ATLAS_ORIGINS:-http://localhost:8090,http://127.0.0.1:8090,http://localhost:5174,http://127.0.0.1:5174}
+      ATLAS_TERMINAL_URL: ${ATLAS_TERMINAL_URL:-http://127.0.0.1:7681}
     volumes:
       - ./backend/app:/app/app
       - ${AIOS_DIR:-C:/Users/lawto/aios}:/aios:ro

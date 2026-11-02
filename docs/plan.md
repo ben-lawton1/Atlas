@@ -15,13 +15,13 @@ Opus plans and reviews, Sonnet codes. Each slice is one or more commits on `feat
 
 | # | Slice | Status |
 |---|---|---|
-| 7 | Notes write proxy (D21) with the Origin/JSON guard (D22) and tests | planned |
-| 8 | Sidebar ported from Chalk (D23): look, add buttons, More menu, inline rename, two-step delete, keyboard; brain tree restyled | planned |
-| 9 | Sync with embedded Chalk (D24): library-changed both ways, open new page, go Home when the open page is deleted | planned |
-| 10 | Bridge moved into Atlas as `atlas-terminal` (D25), with the `claude` built-in profile (D27) and Atlas origins | planned |
-| 11 | Global terminal dock (D26, D28) with the Claude button | planned |
+| 7 | Notes write proxy (D21) with the Origin/JSON guard (D22) and tests | done |
+| 8 | Sidebar ported from Chalk (D23): look, add buttons, More menu, inline rename, two-step delete, keyboard; brain tree restyled | done |
+| 9 | Sync with embedded Chalk (D24): library-changed both ways, open new page, go Home when the open page is deleted | done |
+| 10 | Bridge moved into Atlas as `atlas-terminal` (D25), with the `claude` built-in profile (D27) and Atlas origins | done (binary built; the switch from `chalk-terminal.exe` is Ben's to do) |
+| 11 | Global terminal dock (D26, D28) with the Claude button | done |
 | 12 | Chalk: terminal removed, D24 messages added (Chalk repo) | planned |
-| 13 | e2e for all of the above; README, CLAUDE.md, plan status | planned |
+| 13 | e2e for all of the above; README, CLAUDE.md, plan status | done |
 
 ## Not yet done / next
 

@@ -28,18 +28,37 @@ services:
       CHALK_API_URL: http://chalk-stub:8081
       CHALK_PUBLIC_URL: http://chalk-stub:8081
       ATLAS_BRAIN_LABEL: fixture-brain
+      ATLAS_ORIGINS: http://app-test:8000     # the e2e browser loads Atlas from here (D22)
+      ATLAS_TERMINAL_URL: http://term-test:7681
     volumes:
       - ./backend/tests/fixtures/aios:/aios:ro
     depends_on:
       chalk-stub:
         condition: service_healthy
     healthcheck: *health
+  term-test:                        # the terminal bridge (Linux build) for the dock e2e; private network only
+    image: atlas-term-test:${ATLAS_TEST_TAG:-local}
+    build:
+      context: ./bridge
+      target: runtime
+    command: ["--addr", "0.0.0.0:7681", "--allow-non-loopback", "--config", "/etc/atlas-test/e2e-terminal.json"]
+    volumes:
+      - ./bridge/testdata:/etc/atlas-test:ro   # e2e-terminal.json (sh + a fake `claude` profile) and fake-claude.sh
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-H", "Origin: http://app-test:8000", "http://term-test:7681/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 2s
+      start_interval: 1s
   e2e:
     image: atlas-e2e:${ATLAS_TEST_TAG:-local}
     build:
       context: ./e2e
     depends_on:
       app-test:
+        condition: service_healthy
+      term-test:
         condition: service_healthy
     environment:
       BASE_URL: http://app-test:8000
