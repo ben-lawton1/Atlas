@@ -20,11 +20,22 @@ Opus plans and reviews, Sonnet codes. Each slice is one or more commits on `feat
 | 9 | Sync with embedded Chalk (D24): library-changed both ways, open new page, go Home when the open page is deleted | done |
 | 10 | Bridge moved into Atlas as `atlas-terminal` (D25), with the `claude` built-in profile (D27) and Atlas origins | done (binary built; the switch from `chalk-terminal.exe` is Ben's to do) |
 | 11 | Global terminal dock (D26, D28) with the Claude button | done |
-| 12 | Chalk: terminal removed, D24 messages added (Chalk repo) | planned |
+| 12 | Chalk: terminal removed, D24 messages added (Chalk repo) | done (Chalk `feat/atlas-sync`: 69a20d6, 162ac6e) |
 | 13 | e2e for all of the above; README, CLAUDE.md, plan status | done |
+
+Live check 2026-11-02 against real Chalk (from `feat/atlas-sync`) and `atlas-terminal.exe`:
+- **Passed:**
+  - Chalk-style sidebar.
+  - New notebook from Atlas lands in the real library. The rename box survives the real iframe loading.
+  - Embedded Chalk's sidebar shows the new notebook.
+  - Two-step delete from the More menu.
+  - PowerShell runs in the dock.
+  - The Claude button starts the VS Code extension's `claude.exe`, which shows first-run onboarding (theme picker).
+- **Not checked live:** Ctrl+` from inside real Chalk and dock persistence on a real note page. My script looked for "Test Board" after Ben had renamed it. Both are covered by the e2e suites.
 
 ## Not yet done / next
 
-- Ben's hands-on check, then merge `feat/atlas-v0` and Chalk's `feat/embed` to `main`.
-- Page switching inside the real Chalk is only covered by the stub and Chalk's own e2e (the real library has one page).
+- **Bridge switch:** Ben closes `chalk-terminal.exe` and starts `atlas-terminal.exe` on the default `127.0.0.1:7681`; then recreate the Atlas container without the temporary `ATLAS_TERMINAL_URL=http://127.0.0.1:7682` override.
+- **Running bridge locks its build:** `bridge/dist/atlas-terminal.exe` is locked while it runs, so `bridge-build` fails then. Consider running a copy from a stable folder.
+- **Merge:** after Ben's hands-on check, merge `feat/atlas-v1` and Chalk's `feat/atlas-sync` to `main` and push.
 - Dashboards, remote access and authentication (D10).
