@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from app.brain import Brain, TooLarge
 from app.library import ChalkUnavailable, fetch_library
+from app.notes_write import DEFAULT_ORIGINS, build_router, parse_origins
 
 
 def create_app(
@@ -15,12 +16,16 @@ def create_app(
     chalk_api_url: str | None = None,
     chalk_public_url: str | None = None,
     brain_label: str | None = None,
+    origins: str | None = None,
+    terminal_url: str | None = None,
 ) -> FastAPI:
     brain_dir = brain_dir if brain_dir is not None else os.environ.get("ATLAS_BRAIN_DIR", "/aios")
     static_dir = static_dir if static_dir is not None else os.environ.get("ATLAS_STATIC_DIR", "/app/static")
     chalk_api_url = chalk_api_url or os.environ.get("CHALK_API_URL", "http://host.docker.internal:8080")
     chalk_public_url = chalk_public_url or os.environ.get("CHALK_PUBLIC_URL", "http://localhost:8080")
     brain_label = brain_label or os.environ.get("ATLAS_BRAIN_LABEL") or brain_dir
+    allowed_origins = parse_origins(origins if origins is not None else os.environ.get("ATLAS_ORIGINS", DEFAULT_ORIGINS))
+    terminal_url = terminal_url or os.environ.get("ATLAS_TERMINAL_URL", "http://127.0.0.1:7681")
 
     app = FastAPI(title="Atlas", version="0.1.0")
     brain = Brain(brain_dir)
@@ -31,7 +36,7 @@ def create_app(
 
     @app.get("/api/config")
     def config() -> dict:
-        return {"chalkPublicUrl": chalk_public_url, "brainLabel": brain_label}
+        return {"chalkPublicUrl": chalk_public_url, "brainLabel": brain_label, "terminalUrl": terminal_url}
 
     @app.get("/api/atlas/tree")
     def tree() -> dict:
@@ -57,6 +62,8 @@ def create_app(
             return JSONResponse(fetch_library(chalk_api_url))
         except ChalkUnavailable as exc:
             return JSONResponse({"detail": str(exc)}, status_code=502)
+
+    app.include_router(build_router(chalk_api_url, allowed_origins))
 
     @app.api_route(
         "/api/{rest:path}",

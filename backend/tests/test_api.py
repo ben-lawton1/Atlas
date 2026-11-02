@@ -22,7 +22,7 @@ def walk(nodes):
 def test_health_and_config(client, monkeypatch):
     assert client.get("/api/health").json() == {"status": "ok"}
     cfg = client.get("/api/config").json()
-    assert set(cfg) == {"chalkPublicUrl", "brainLabel"}
+    assert set(cfg) == {"chalkPublicUrl", "brainLabel", "terminalUrl"}
     assert cfg["chalkPublicUrl"] == "http://localhost:8080"
 
 
@@ -30,7 +30,11 @@ def test_config_from_env(brain, monkeypatch):
     monkeypatch.setenv("CHALK_PUBLIC_URL", "http://chalk.test:1234")
     monkeypatch.setenv("ATLAS_BRAIN_LABEL", "C:/brain")
     c = TestClient(create_app(brain_dir=str(brain), static_dir=""))
-    assert c.get("/api/config").json() == {"chalkPublicUrl": "http://chalk.test:1234", "brainLabel": "C:/brain"}
+    assert c.get("/api/config").json() == {
+        "chalkPublicUrl": "http://chalk.test:1234",
+        "brainLabel": "C:/brain",
+        "terminalUrl": "http://127.0.0.1:7681",
+    }
 
 
 def test_unknown_api_is_json_404(client):
