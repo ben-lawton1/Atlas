@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.brain import Brain, TooLarge
+from app.dashboards import build_router as build_dashboards
 from app.library import ChalkUnavailable, fetch_library
 from app.notes_write import DEFAULT_ORIGINS, build_router, parse_origins
 
@@ -18,6 +19,7 @@ def create_app(
     brain_label: str | None = None,
     origins: str | None = None,
     terminal_url: str | None = None,
+    dashboard_sources: dict[str, list] | None = None,
 ) -> FastAPI:
     brain_dir = brain_dir if brain_dir is not None else os.environ.get("ATLAS_BRAIN_DIR", "/aios")
     static_dir = static_dir if static_dir is not None else os.environ.get("ATLAS_STATIC_DIR", "/app/static")
@@ -64,6 +66,8 @@ def create_app(
             return JSONResponse({"detail": str(exc)}, status_code=502)
 
     app.include_router(build_router(chalk_api_url, allowed_origins))
+    # D37: connectors plug in via dashboard_sources = {"calendar": [...], "portfolio": [...], "briefing": [...]}
+    app.include_router(build_dashboards(**(dashboard_sources or {})))
 
     @app.api_route(
         "/api/{rest:path}",
