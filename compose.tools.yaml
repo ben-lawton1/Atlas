@@ -1,0 +1,30 @@
+name: atlas-tools
+# Build and test the host terminal bridge (Go). Nothing here runs on the host.
+x-bridge: &bridge
+  image: atlas-bridge-tools:${ATLAS_TEST_TAG:-local}
+  build:
+    context: ./bridge
+    target: tools
+  volumes:
+    - ./bridge:/bridge
+    - bridge-gocache:/root/.cache/go-build
+    - bridge-gomod:/go/pkg/mod
+services:
+  bridge-build:                     # -> bridge/dist/atlas-terminal.exe (Windows) and bridge/dist/atlas-terminal (Linux)
+    <<: *bridge
+    environment:
+      ATLAS_BRIDGE_VERSION: ${ATLAS_BRIDGE_VERSION:-0.1.0}
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=$$ATLAS_BRIDGE_VERSION" -o dist/atlas-terminal.exe .
+        GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=$$ATLAS_BRIDGE_VERSION" -o dist/atlas-terminal .
+        ls -l dist
+  bridge-unit:
+    <<: *bridge
+    command: ["sh", "-c", "go vet ./... && GOOS=windows go vet ./... && go test ./..."]
+volumes:
+  bridge-gocache:
+  bridge-gomod:

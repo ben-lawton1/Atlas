@@ -1,0 +1,9 @@
+{
+  "profiles": [
+    {"id": "sh", "name": "sh", "command": "/bin/sh", "cwd": "/tmp"},
+    {"id": "claude", "name": "Claude Code (stub)", "command": "/bin/sh", "args": ["/etc/atlas-test/fake-claude.sh"], "cwd": "/tmp"}
+  ],
+  "defaultProfile": "sh",
+  "origins": ["http://app-test:8000"],
+  "hosts": ["term-test:7681"]
+}
