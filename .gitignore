@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.vitest/
+e2e/artifacts/
+.env
+# the fixture brain deliberately contains a fake .env so the D7 guard tests mean something
+!backend/tests/fixtures/aios/.env
