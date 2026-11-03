@@ -52,6 +52,20 @@ Next for round 3:
 - **Briefing.** Generated each morning once calendar and mail are connected.
 - **Deferred design items:** Spaces, notifications, Auto-plan, "Ask Atlas" in the command box.
 
+## Round 4 (2026-11-03): Chalk integration removed (D41), branch `chore/remove-chalk-embed`
+
+Ben didn't like how Chalk was built into Atlas and wants to redesign it from a clean slate. Removed: the iframe and Notes view, the Notes tree and management, the library and write proxy, the D22 write guard, the Notes rail item and Home card, note commands, the `CHALK_*` and `ATLAS_ORIGINS` settings and the `chalk-stub` service. Restorable from tag `chalk-embed-v1` (e88f1f2).
+
+| # | Slice | Status |
+|---|---|---|
+| 18 | Frontend: brain-only sidebar, no notes route, library, toast or note commands | done |
+| 19 | Backend: `library.py`, `notes_write.py` and their tests removed; `/api/config` is `{brainLabel, terminalUrl}` | done |
+| 20 | Infra: compose, `.env.example`, `stub/chalk-stub/` | done |
+| 21 | e2e: `notes-terminal.spec.ts` renamed `terminal.spec.ts`, notes and iframe tests dropped | done |
+| 22 | Docs: README, CLAUDE.md, D41 and the affected decisions | done |
+
+Checks 2026-11-03 (Docker): backend 111 passed, frontend 64 unit tests passed, e2e 25/25. Not pushed; the prod `atlas` project is not rebuilt yet.
+
 ## Not yet done / next
 
 - **Running bridge locks its build:** `bridge/dist/atlas-terminal.exe` is locked while it runs, so `bridge-build` fails then. Consider running a copy from a stable folder.
