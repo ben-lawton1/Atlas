@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type AtlasNode, type Config } from '../api';
-import { LIBRARY_CHANGED_EVENT } from '../messages';
-import { createNotesActions } from '../notesActions';
-import { navigate, useRoute, type Route } from '../router';
-import { useLibrary } from '../state';
+import { useRoute, type Route } from '../router';
 import { CommandBox } from './CommandBox';
 import { FilePreview } from './FilePreview';
 import { Home } from './Home';
 import { Icon } from './icons';
-import { NotesView } from './NotesView';
 import { Rail } from './Rail';
 import { Sidebar } from './Sidebar';
 import { TerminalButton, TerminalPanel } from './terminal/TerminalPanel';
-import { Toast } from './Toast';
 import { CalendarView } from './dashboards/CalendarView';
 import { PortfolioView } from './dashboards/PortfolioView';
 
@@ -39,7 +34,7 @@ function writeSidebarOpen(open: boolean): void {
   }
 }
 
-const VIEW_TITLES: Record<Route['name'], string> = { home: 'Home', calendar: 'Calendar', portfolio: 'Portfolio', notes: 'Notes', atlas: 'Brain' };
+const VIEW_TITLES: Record<Route['name'], string> = { home: 'Home', calendar: 'Calendar', portfolio: 'Portfolio', atlas: 'Brain' };
 
 function todayLabel(): string {
   const d = new Date();
@@ -50,7 +45,6 @@ function todayLabel(): string {
 
 export function App() {
   const route = useRoute();
-  const { library, reload } = useLibrary();
   const [config, setConfig] = useState<Config | null>(null);
   const [tree, setTree] = useState<{ sections: AtlasNode[] } | null>(null);
   const [treeError, setTreeError] = useState<string | null>(null);
@@ -82,24 +76,7 @@ export function App() {
   // On a phone-sized screen the panel is an overlay: close it after navigating.
   useEffect(() => {
     if (isNarrow()) setNavOpenState(false);
-  }, [route.name, route.name === 'atlas' ? route.path : route.name === 'notes' ? route.boardId : null]);
-
-  const chalkUrl = config?.chalkPublicUrl ?? null;
-
-  // Notes management (D21, D24). The actions read the live route through a ref so they never act on a stale one.
-  const boardRef = useRef<string | null>(null);
-  boardRef.current = route.name === 'notes' ? route.boardId : null;
-  const actions = useMemo(
-    () =>
-      createNotesActions({
-        api,
-        refresh: reload,
-        announce: () => window.dispatchEvent(new Event(LIBRARY_CHANGED_EVENT)),
-        navigate: (href) => navigate(href),
-        currentBoardId: () => boardRef.current,
-      }),
-    [reload],
-  );
+  }, [route.name, route.name === 'atlas' ? route.path : null]);
 
   return (
     <div className="app">
@@ -107,13 +84,9 @@ export function App() {
       <div className="body">
         <Sidebar
           route={route}
-          library={library}
-          chalkUrl={chalkUrl}
           tree={tree}
           treeError={treeError}
-          onRetryLibrary={() => void reload()}
           open={navOpen}
-          actions={actions}
         />
         {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
         <div className="column">
@@ -133,12 +106,12 @@ export function App() {
               <h1 className="view-title" data-testid="view-title">{VIEW_TITLES[route.name]}</h1>
               <span className="view-date" data-testid="home-date">{todayLabel()}</span>
             </div>
-            <CommandBox library={library.status === 'ok' ? library.data : null} sections={tree?.sections ?? null} />
+            <CommandBox sections={tree?.sections ?? null} />
             {config && <span className="muted brain-label" title="Brain folder">{config.brainLabel}</span>}
             <TerminalButton />
           </header>
           <main className="main">
-            {route.name === 'home' && <Home library={library} chalkUrl={chalkUrl} />}
+            {route.name === 'home' && <Home />}
             {route.name === 'calendar' && <CalendarView />}
             {route.name === 'portfolio' && <PortfolioView />}
             {route.name === 'atlas' &&
@@ -147,24 +120,10 @@ export function App() {
               ) : (
                 <div className="pane-scroll"><p className="notice">Pick a file from the Atlas tree.</p></div>
               ))}
-            {route.name === 'notes' &&
-              (!route.boardId ? (
-                <div className="pane-scroll"><p className="notice">Pick a page from the Notes tree.</p></div>
-              ) : chalkUrl ? (
-                <NotesView
-                  boardId={route.boardId}
-                  chalkUrl={chalkUrl}
-                  library={library.status === 'ok' ? library.data : null}
-                  onLibraryChanged={() => void reload()}
-                />
-              ) : (
-                <div className="pane-scroll"><p className="muted">Loading…</p></div>
-              ))}
             <TerminalPanel />
           </main>
         </div>
       </div>
-      <Toast />
     </div>
   );
 }

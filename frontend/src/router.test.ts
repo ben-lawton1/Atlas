@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { atlasHref, notesHref, parseRoute, routeHref } from './router';
+import { atlasHref, parseRoute, routeHref } from './router';
 
 describe('parseRoute', () => {
   it('parses home', () => {
@@ -16,9 +16,9 @@ describe('parseRoute', () => {
     expect(parseRoute('/calendar')).toEqual({ name: 'calendar' });
     expect(parseRoute('/portfolio/')).toEqual({ name: 'portfolio' });
   });
-  it('parses notes', () => {
-    expect(parseRoute('/notes/D9oZeaWacSE')).toEqual({ name: 'notes', boardId: 'D9oZeaWacSE' });
-    expect(parseRoute('/notes')).toEqual({ name: 'notes', boardId: null });
+  it('no longer has a notes route: /notes/... falls back to home', () => {
+    expect(parseRoute('/notes/D9oZeaWacSE')).toEqual({ name: 'home' });
+    expect(parseRoute('/notes')).toEqual({ name: 'home' });
   });
   it('survives malformed escapes', () => {
     expect(parseRoute('/atlas/a%E0%A4%A.md')).toMatchObject({ name: 'atlas' });
@@ -30,7 +30,6 @@ describe('hrefs', () => {
     for (const path of ['entities/my file.md', 'intake/a#b.md', 'state/schema/001.sql']) {
       expect(parseRoute(atlasHref(path))).toEqual({ name: 'atlas', path });
     }
-    expect(parseRoute(notesHref('ab/c d'))).toEqual({ name: 'notes', boardId: 'ab/c d' });
     expect(routeHref({ name: 'home' })).toBe('/');
     expect(routeHref({ name: 'calendar' })).toBe('/calendar');
     expect(routeHref({ name: 'portfolio' })).toBe('/portfolio');

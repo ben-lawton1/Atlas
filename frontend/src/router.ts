@@ -4,8 +4,7 @@ export type Route =
   | { name: 'home' }
   | { name: 'calendar' }
   | { name: 'portfolio' }
-  | { name: 'atlas'; path: string | null }
-  | { name: 'notes'; boardId: string | null };
+  | { name: 'atlas'; path: string | null };
 
 function decode(seg: string): string {
   try {
@@ -20,18 +19,15 @@ export function parseRoute(pathname: string): Route {
   if (segs[0] === 'atlas') return { name: 'atlas', path: segs.length > 1 ? segs.slice(1).join('/') : null };
   if (segs[0] === 'calendar') return { name: 'calendar' };
   if (segs[0] === 'portfolio') return { name: 'portfolio' };
-  if (segs[0] === 'notes') return { name: 'notes', boardId: segs[1] ?? null };
   return { name: 'home' };
 }
 
 const enc = (s: string) => s.split('/').map(encodeURIComponent).join('/');
 
 export const atlasHref = (path: string, hash = '') => `/atlas/${enc(path)}${hash}`;
-export const notesHref = (boardId: string) => `/notes/${encodeURIComponent(boardId)}`;
 
 export function routeHref(route: Route): string {
   if (route.name === 'atlas') return route.path ? atlasHref(route.path) : '/atlas';
-  if (route.name === 'notes') return route.boardId ? notesHref(route.boardId) : '/notes';
   if (route.name === 'calendar') return '/calendar';
   if (route.name === 'portfolio') return '/portfolio';
   return '/';

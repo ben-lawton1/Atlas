@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AtlasNode, Library } from '../api';
+import type { AtlasNode } from '../api';
 import { buildCommands, filterCommands } from '../commands';
 import { navigate } from '../router';
 import { Icon } from './icons';
 
-/** Top-bar jump box (D39): views, note pages and brain files. Ctrl+K / Cmd+K focuses it. */
-export function CommandBox({ library, sections }: { library: Library | null; sections: AtlasNode[] | null }) {
+/** Top-bar jump box (D39): views and brain files. Ctrl+K / Cmd+K focuses it. */
+export function CommandBox({ sections }: { sections: AtlasNode[] | null }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const all = useMemo(() => buildCommands(library, sections), [library, sections]);
+  const all = useMemo(() => buildCommands(sections), [sections]);
   const results = useMemo(() => filterCommands(all, query), [all, query]);
 
   useEffect(() => {
@@ -64,12 +64,12 @@ export function CommandBox({ library, sections }: { library: Library | null; sec
         className="cmd-input"
         type="text"
         role="combobox"
-        aria-label="Jump to a view, note or file"
+        aria-label="Jump to a view or file"
         aria-expanded={expanded}
         aria-controls="cmd-list"
         aria-autocomplete="list"
         aria-activedescendant={expanded ? `cmd-opt-${active}` : undefined}
-        placeholder="Jump to a view, note or file…"
+        placeholder="Jump to a view or file…"
         autoComplete="off"
         spellCheck={false}
         value={query}

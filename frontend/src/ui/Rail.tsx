@@ -8,11 +8,10 @@ const ITEMS: Item[] = [
   { id: 'home', label: 'Home', href: '/', icon: 'home', active: (r) => r.name === 'home' },
   { id: 'calendar', label: 'Calendar', href: '/calendar', icon: 'calendar', active: (r) => r.name === 'calendar' },
   { id: 'portfolio', label: 'Portfolio', href: '/portfolio', icon: 'trend', active: (r) => r.name === 'portfolio' },
-  { id: 'notes', label: 'Notes', href: '/notes', icon: 'notebook', active: (r) => r.name === 'notes' },
   { id: 'brain', label: 'Brain', href: '/atlas', icon: 'brain', active: (r) => r.name === 'atlas' },
 ];
 
-/** Left navigation (D36). Notes and Brain also reveal the sidebar trees. */
+/** Left navigation (D36). Brain also reveals the sidebar tree. */
 export function Rail({ route, onShowSidebar }: { route: Route; onShowSidebar: () => void }) {
   return (
     <nav className="rail" aria-label="Main" data-testid="rail">
@@ -32,7 +31,7 @@ export function Rail({ route, onShowSidebar }: { route: Route; onShowSidebar: ()
             aria-current={current ? 'page' : undefined}
             data-testid={`rail-${it.id}`}
             onClick={(e) => {
-              if (it.id === 'notes' || it.id === 'brain') onShowSidebar();
+              if (it.id === 'brain') onShowSidebar();
               linkClick(e, it.href);
             }}
           >

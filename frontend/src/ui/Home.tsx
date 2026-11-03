@@ -1,14 +1,13 @@
-import { api, allPages, formatWhen } from '../api';
+import { api, formatWhen } from '../api';
 import { startOfWeek } from '../calendar';
-import { atlasHref, linkClick, notesHref } from '../router';
-import { useAsync, type LibraryState } from '../state';
+import { atlasHref, linkClick } from '../router';
+import { useAsync } from '../state';
 import { BriefingPanel } from './dashboards/BriefingPanel';
 import { PortfolioPanel } from './dashboards/PortfolioPanel';
 import { WeekCalendar } from './dashboards/WeekCalendar';
 
-export function Home({ library, chalkUrl }: { library: LibraryState; chalkUrl: string | null }) {
+export function Home() {
   const recent = useAsync(() => api.recent(8), 'recent');
-  const pages = library.status === 'ok' ? allPages(library.data).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8) : [];
 
   return (
     <div className="pane-scroll">
@@ -36,25 +35,6 @@ export function Home({ library, chalkUrl }: { library: LibraryState; chalkUrl: s
                     <li key={f.path}>
                       <a href={href} onClick={(e) => linkClick(e, href)}>{f.path}</a>
                       <span className="muted">{formatWhen(f.modifiedAt)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-          <section className="card" data-testid="card-recent-notes">
-            <h2>Recent notes</h2>
-            {library.status === 'loading' && <p className="muted">Loading…</p>}
-            {library.status === 'error' && <p className="muted">Chalk isn't running at {chalkUrl ?? 'its configured address'}.</p>}
-            {library.status === 'ok' && pages.length === 0 && <p className="muted">No pages yet.</p>}
-            {library.status === 'ok' && (
-              <ul className="list">
-                {pages.map((p) => {
-                  const href = notesHref(p.id);
-                  return (
-                    <li key={p.id}>
-                      <a href={href} onClick={(e) => linkClick(e, href)}>{p.notebook} / {p.section} / {p.name}</a>
-                      <span className="muted">{formatWhen(p.updatedAt)}</span>
                     </li>
                   );
                 })}

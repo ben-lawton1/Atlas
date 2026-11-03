@@ -1,29 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import type { AtlasNode, Library } from './api';
+import type { AtlasNode } from './api';
 import { buildCommands, filterCommands, VIEWS } from './commands';
 
-const library: Library = {
-  notebooks: [{ name: 'Work', sections: [{ name: 'Notes', pages: [
-    { id: 'p1', name: 'Page One', updatedAt: '', notebook: 'Work', section: 'Notes' },
-    { id: 'p2', name: 'Plan', updatedAt: '', notebook: 'Work', section: 'Notes' },
-  ] }] }],
-};
+const file = (name: string, path: string): AtlasNode => ({ name, path, type: 'file', kind: 'markdown' });
 const tree: AtlasNode[] = [
   { name: 'entities', path: 'entities', type: 'dir', children: [
-    { name: 'about.md', path: 'entities/personal/about.md', type: 'file', kind: 'markdown' },
-    { name: 'home-plan.md', path: 'entities/home-plan.md', type: 'file', kind: 'markdown' },
+    file('about.md', 'entities/personal/about.md'),
+    file('home-plan.md', 'entities/home-plan.md'),
+    file('Page One.md', 'pipelines/Page One.md'),
+    file('plan.md', 'pipelines/plan.md'),
   ] },
 ];
-const all = buildCommands(library, tree);
+const all = buildCommands(tree);
 
 describe('buildCommands', () => {
-  it('has views, note pages and brain files', () => {
-    expect(all.filter((c) => c.kind === 'view')).toHaveLength(5);
-    expect(all.find((c) => c.id === 'note:p1')).toMatchObject({ label: 'Page One', detail: 'Work / Notes', href: '/notes/p1' });
+  it('has views and brain files', () => {
+    expect(all.filter((c) => c.kind === 'view')).toHaveLength(4);
     expect(all.find((c) => c.kind === 'file')).toMatchObject({ label: 'about.md', detail: 'entities/personal/about.md', href: '/atlas/entities/personal/about.md' });
   });
   it('copes with missing data', () => {
-    expect(buildCommands(null, null)).toEqual(VIEWS);
+    expect(buildCommands(null)).toEqual(VIEWS);
   });
 });
 
@@ -32,19 +28,20 @@ describe('filterCommands', () => {
     expect(filterCommands(all, '  ')).toEqual(VIEWS);
   });
   it('matches case-insensitively with every token', () => {
-    expect(filterCommands(all, 'page ONE').map((c) => c.id)).toEqual(['note:p1']);
-    expect(filterCommands(all, 'work one').map((c) => c.id)).toEqual(['note:p1']);
+    expect(filterCommands(all, 'page ONE').map((c) => c.id)).toEqual(['file:pipelines/Page One.md']);
+    expect(filterCommands(all, 'pipelines one').map((c) => c.id)).toEqual(['file:pipelines/Page One.md']);
     expect(filterCommands(all, 'nothing here')).toEqual([]);
   });
   it('ranks label prefix, then label contains, then detail only; views first on ties', () => {
-    // "home": view Home (prefix, view), home-plan.md (prefix, file), then "entities/home-plan.md" is the same entry
+    // "home": view Home (prefix, view), then home-plan.md (prefix, file)
     expect(filterCommands(all, 'home').map((c) => c.id)).toEqual(['view:home', 'file:entities/home-plan.md']);
-    // "pla": Plan (prefix), home-plan.md (contains); "personal" appears in a path only
-    expect(filterCommands(all, 'pla').map((c) => c.id)).toEqual(['note:p2', 'file:entities/home-plan.md']);
+    // "pla": plan.md (prefix), home-plan.md (contains)
+    expect(filterCommands(all, 'pla').map((c) => c.id)).toEqual(['file:pipelines/plan.md', 'file:entities/home-plan.md']);
+    // "person" appears in a path only
     expect(filterCommands(all, 'person').map((c) => c.id)).toEqual(['file:entities/personal/about.md']);
   });
   it('caps the results', () => {
-    const many = buildCommands(null, Array.from({ length: 20 }, (_, i) => ({ name: `f${i}.md`, path: `pipelines/f${i}.md`, type: 'file' as const, kind: 'markdown' as const })));
+    const many = buildCommands(Array.from({ length: 20 }, (_, i) => file(`f${i}.md`, `pipelines/f${i}.md`)));
     expect(filterCommands(many, 'f')).toHaveLength(8);
   });
 });
