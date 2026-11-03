@@ -1,6 +1,6 @@
 # Atlas
 
-Atlas is the name of Ben's AI operating system. This repo is its front end: a home page, a read-only browser for the brain (`C:\Users\lawto\aios`), Chalk embedded as the note-taking feature (with notebooks, sections and pages managed from Atlas's own sidebar), and a terminal dock with a one-click Claude Code session. Home is a dashboard (this week's calendar, portfolio, daily briefing, recent files and notes); `/calendar` and `/portfolio` are full views. They show "not connected" until calendar and brokerage connectors are added behind `/api/calendar`, `/api/portfolio` and `/api/briefing` (D37). A left rail switches views, Ctrl+K jumps to any view, note or brain file, and Ctrl+\ hides the notes/brain sidebar.
+Atlas is the name of Ben's AI operating system. This repo is its front end: a home page, a read-only browser for the brain (`/home/ben/Atlas/aios`), Chalk embedded as the note-taking feature (with notebooks, sections and pages managed from Atlas's own sidebar), and a terminal dock with a one-click Claude Code session. Home is a dashboard (this week's calendar, portfolio, daily briefing, recent files and notes); `/calendar` and `/portfolio` are full views. They show "not connected" until calendar and brokerage connectors are added behind `/api/calendar`, `/api/portfolio` and `/api/briefing` (D37). A left rail switches views, Ctrl+K jumps to any view, note or brain file, and Ctrl+\ hides the notes/brain sidebar.
 
 Stack: React + TypeScript + Vite, FastAPI, one Docker image, plus a small Go program (the terminal bridge) that runs on Windows. Same patterns as Chalk.
 
@@ -70,7 +70,7 @@ This writes `bridge\dist\atlas-terminal.exe` (Windows) and `bridge/dist/atlas-te
 
 **Start it with Windows:** press Win+R, run `shell:startup`, and in that folder create a shortcut to `atlas-terminal.exe`. In the shortcut's properties set "Run" to "Minimized".
 
-**Profiles.** Built in: `powershell` (PowerShell 7 if `pwsh` is installed, otherwise Windows PowerShell), `wsl` (only if `wsl.exe` exists), both starting in your home folder, and `claude`. Add your own in `%USERPROFILE%\.atlas\terminal.json` (or `--config`; the path in use is printed at startup, and a missing file is fine):
+**Profiles.** Built in: `powershell` (PowerShell 7 if `pwsh` is installed, otherwise Windows PowerShell), `wsl` (only if `wsl.exe` exists), both starting in your home folder, and `claude`. Add your own in `~/.atlas/terminal.json` (`%USERPROFILE%\.atlas\terminal.json` on Windows) (or `--config`; the path in use is printed at startup, and a missing file is fine):
 
 ```json
 {
@@ -105,7 +105,7 @@ Copy `.env.example` to `.env` to override. All are optional.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `AIOS_DIR` | `C:/Users/lawto/aios` | brain folder, mounted read-only at `/aios` |
+| `AIOS_DIR` | `/home/ben/Atlas/aios` | brain folder, mounted read-only at `/aios` |
 | `ATLAS_BIND` | `127.0.0.1` | address Atlas listens on (port 8090) |
 | `CHALK_API_URL` | `http://host.docker.internal:8080` | what the Atlas backend calls to read and change Chalk's library |
 | `CHALK_PUBLIC_URL` | `http://localhost:8080` | what the browser loads in the iframe; the only origin Atlas accepts messages from |

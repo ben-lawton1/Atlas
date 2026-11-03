@@ -1,6 +1,6 @@
 # Atlas (app)
 
-Front end for Ben's AI operating system Atlas. The brain itself lives in `C:\Users\lawto\aios`; this repo only reads it. Decisions: `docs/decisions.md`. Plan and status: `docs/plan.md`.
+Front end for Ben's AI operating system Atlas. The brain itself lives in `/home/ben/Atlas/aios`; this repo only reads it. Decisions: `docs/decisions.md`. Plan and status: `docs/plan.md`.
 
 ## Stack and layout
 
@@ -9,7 +9,7 @@ Front end for Ben's AI operating system Atlas. The brain itself lives in `C:\Use
 - `backend/app/dashboards.py` serves `/api/calendar`, `/api/portfolio`, `/api/briefing` (D37). Connectors plug in as sources (`CalendarSource`, `PortfolioSource`, `BriefingSource`) via `create_app(dashboard_sources=...)`; the response shapes are a contract with the frontend types, so change both together.
 - `bridge/` Go terminal bridge `atlas-terminal` (runs on Windows, never in Docker for real use). Built and tested only via `compose.tools.yaml` (project `atlas-tools`); output in `bridge/dist/` (git-ignored).
 - `stub/chalk-stub/` fake Chalk for tests (in-memory library with the write endpoints). `e2e/` Playwright (runs in Docker).
-- Mirrors Chalk (`C:\Users\lawto\code\Chalk`) for Docker, compose, theme and the sidebar/terminal code. Never edit Chalk from here.
+- Mirrors Chalk (`/home/ben/Atlas/code/Chalk`) for Docker, compose, theme and the sidebar/terminal code. Never edit Chalk from here.
 
 ## Rules
 

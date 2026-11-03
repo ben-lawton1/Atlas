@@ -2,7 +2,7 @@
 
 Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, edit its entry; don't add a contradicting one.
 
-- **D1. The OS is called Atlas.** The app repo is `C:\Users\lawto\code\Atlas` (private, `github.com/ben-lawton1/Atlas`; capitalized like `Chalk`). The brain keeps its `aios` folder and repo, because moving paths orphans Claude Code's memory and settings.
+- **D1. The OS is called Atlas.** The app repo is `/home/ben/Atlas/code/Atlas` (private, `github.com/ben-lawton1/Atlas`; capitalized like `Chalk`). The brain keeps its `aios` folder and repo, because moving paths orphans Claude Code's memory and settings.
 - **D2. Atlas is its own app, separate from Chalk.** Custom dashboards will be added over time, and they don't belong in a whiteboard app.
 - **D3. Chalk is integrated as the note-taking feature, through an iframe.** Chalk keeps its own repo, releases and tests, and Atlas never imports Chalk code. If Chalk is down, only the notes area breaks.
 - **D4. In Atlas, Chalk's notebook sidebar starts hidden but can be opened.** Chalk gets an embed mode (`?embed=1`) that starts with `sidebarOpen = false`. Atlas has a "Notebooks" button that opens and closes it through `postMessage` (origin-checked). Chalk's own open button keeps working. Atlas's left panel is the main way to navigate, but Chalk's full notebook tools (create, rename, move) stay one click away. Standalone Chalk at `:8080` is unchanged.
@@ -27,7 +27,7 @@ Agreed 2026-11-01. Each entry: the decision, then why. When a decision changes, 
 - **D14. Addresses and ports.**
   - Atlas prod: `${ATLAS_BIND:-127.0.0.1}:8090`. Atlas dev: API `127.0.0.1:8001`, web `127.0.0.1:5174`, so they don't collide with Chalk dev on 8000/5173.
   - `CHALK_API_URL` is what the Atlas backend calls (default `http://host.docker.internal:8080`). `CHALK_PUBLIC_URL` is what the browser loads in the iframe (default `http://localhost:8080`), and Atlas exposes it through `/api/config`.
-  - The brain is mounted from `${AIOS_DIR:-C:/Users/lawto/aios}` to `/aios:ro`.
+  - The brain is mounted from `${AIOS_DIR:-/home/ben/Atlas/aios}` to `/aios:ro`.
   - Atlas's tests use a fixture brain and a stub Chalk, never the real brain or Ben's Chalk library.
 
 ## Proposed by implementer (2026-11-01, for review)
