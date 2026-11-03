@@ -32,7 +32,7 @@ def item(id, date, time):
 
 
 def make(brain, **sources):
-    return TestClient(create_app(brain_dir=str(brain), static_dir="", chalk_api_url="http://127.0.0.1:9",
+    return TestClient(create_app(brain_dir=str(brain), static_dir="",
                                  dashboard_sources=sources))
 
 

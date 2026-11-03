@@ -3,30 +3,22 @@
 import os
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 
 from app.brain import Brain, TooLarge
 from app.dashboards import build_router as build_dashboards
-from app.library import ChalkUnavailable, fetch_library
-from app.notes_write import DEFAULT_ORIGINS, build_router, parse_origins
 
 
 def create_app(
     brain_dir: str | None = None,
     static_dir: str | None = None,
-    chalk_api_url: str | None = None,
-    chalk_public_url: str | None = None,
     brain_label: str | None = None,
-    origins: str | None = None,
     terminal_url: str | None = None,
     dashboard_sources: dict[str, list] | None = None,
 ) -> FastAPI:
     brain_dir = brain_dir if brain_dir is not None else os.environ.get("ATLAS_BRAIN_DIR", "/aios")
     static_dir = static_dir if static_dir is not None else os.environ.get("ATLAS_STATIC_DIR", "/app/static")
-    chalk_api_url = chalk_api_url or os.environ.get("CHALK_API_URL", "http://host.docker.internal:8080")
-    chalk_public_url = chalk_public_url or os.environ.get("CHALK_PUBLIC_URL", "http://localhost:8080")
     brain_label = brain_label or os.environ.get("ATLAS_BRAIN_LABEL") or brain_dir
-    allowed_origins = parse_origins(origins if origins is not None else os.environ.get("ATLAS_ORIGINS") or DEFAULT_ORIGINS)
     terminal_url = terminal_url or os.environ.get("ATLAS_TERMINAL_URL", "http://127.0.0.1:7681")
 
     app = FastAPI(title="Atlas", version="0.1.0")
@@ -38,7 +30,7 @@ def create_app(
 
     @app.get("/api/config")
     def config() -> dict:
-        return {"chalkPublicUrl": chalk_public_url, "brainLabel": brain_label, "terminalUrl": terminal_url}
+        return {"brainLabel": brain_label, "terminalUrl": terminal_url}
 
     @app.get("/api/atlas/tree")
     def tree() -> dict:
@@ -58,14 +50,6 @@ def create_app(
     def recent(limit: int = Query(8, ge=1, le=100)) -> list:
         return brain.recent(limit)
 
-    @app.get("/api/notes/library")
-    def library() -> JSONResponse:
-        try:
-            return JSONResponse(fetch_library(chalk_api_url))
-        except ChalkUnavailable as exc:
-            return JSONResponse({"detail": str(exc)}, status_code=502)
-
-    app.include_router(build_router(chalk_api_url, allowed_origins))
     # D37: connectors plug in via dashboard_sources = {"calendar": [...], "portfolio": [...], "briefing": [...]}
     app.include_router(build_dashboards(**(dashboard_sources or {})))
 

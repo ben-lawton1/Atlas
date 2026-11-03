@@ -1,7 +1,4 @@
-import json
 import os
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from fastapi.testclient import TestClient
@@ -22,16 +19,13 @@ def walk(nodes):
 def test_health_and_config(client, monkeypatch):
     assert client.get("/api/health").json() == {"status": "ok"}
     cfg = client.get("/api/config").json()
-    assert set(cfg) == {"chalkPublicUrl", "brainLabel", "terminalUrl"}
-    assert cfg["chalkPublicUrl"] == "http://localhost:8080"
+    assert set(cfg) == {"brainLabel", "terminalUrl"}
 
 
 def test_config_from_env(brain, monkeypatch):
-    monkeypatch.setenv("CHALK_PUBLIC_URL", "http://chalk.test:1234")
     monkeypatch.setenv("ATLAS_BRAIN_LABEL", "C:/brain")
     c = TestClient(create_app(brain_dir=str(brain), static_dir=""))
     assert c.get("/api/config").json() == {
-        "chalkPublicUrl": "http://chalk.test:1234",
         "brainLabel": "C:/brain",
         "terminalUrl": "http://127.0.0.1:7681",
     }
@@ -189,66 +183,31 @@ def test_recent_default_limit_and_validation(client):
     assert client.get("/api/atlas/recent", params={"limit": 0}).status_code == 422
 
 
-# ---- Chalk library proxy ------------------------------------------------
+# ---- Removed Chalk routes (D41) and CORS ----------------------------------
 
-LIBRARY = {"path": "x", "notebooks": [{"name": "NB", "sections": [{"name": "S", "pages": [
-    {"id": "p1", "name": "One", "version": 1, "updatedAt": "2026-01-01T00:00:00.000Z", "notebook": "NB", "section": "S"}]}]}]}
-
-
-@pytest.fixture()
-def fake_chalk():
-    class H(BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.path == "/api/library":
-                data = json.dumps(LIBRARY).encode()
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(data)
-            else:
-                self.send_response(404)
-                self.end_headers()
-
-        def log_message(self, *a):
-            pass
-
-    srv = HTTPServer(("127.0.0.1", 0), H)
-    t = threading.Thread(target=srv.serve_forever, daemon=True)
-    t.start()
-    yield f"http://127.0.0.1:{srv.server_port}"
-    srv.shutdown()
+def test_chalk_routes_are_json_404(client):
+    # the catch-all answers every method under /api with a JSON 404 (there is no 405)
+    for method, path in [("GET", "/api/notes/library"), ("POST", "/api/notes/notebooks")]:
+        r = client.request(method, path, json={"name": "x"} if method == "POST" else None)
+        assert r.status_code == 404, (method, path)
+        assert r.json() == {"detail": "Not found"}
+        assert r.headers["content-type"].startswith("application/json")
 
 
-def test_library_proxy_success(brain, fake_chalk):
-    c = TestClient(create_app(brain_dir=str(brain), static_dir="", chalk_api_url=fake_chalk))
-    r = c.get("/api/notes/library")
+def test_config_has_terminal_url(brain):
+    app = TestClient(create_app(brain_dir=str(brain), static_dir="", terminal_url="http://t:1"))
+    assert app.get("/api/config").json()["terminalUrl"] == "http://t:1"
+    d = TestClient(create_app(brain_dir=str(brain), static_dir=""))
+    assert d.get("/api/config").json()["terminalUrl"] == "http://127.0.0.1:7681"
+
+
+def test_no_cors_headers(client):
+    evil = {"Origin": "http://evil.example"}
+    r = client.options("/api/config", headers={**evil, "Access-Control-Request-Method": "GET"})
+    assert "access-control-allow-origin" not in r.headers
+    r = client.get("/api/config", headers=evil)
     assert r.status_code == 200
-    assert r.json() == LIBRARY
-
-
-def test_library_proxy_unreachable_is_502(client):
-    r = client.get("/api/notes/library")
-    assert r.status_code == 502
-    assert "reachable" in r.json()["detail"]
-
-
-def test_library_proxy_non_json_is_502(brain):
-    class H(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"<html>not json</html>")
-
-        def log_message(self, *a):
-            pass
-
-    srv = HTTPServer(("127.0.0.1", 0), H)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    try:
-        c = TestClient(create_app(brain_dir=str(brain), static_dir="", chalk_api_url=f"http://127.0.0.1:{srv.server_port}"))
-        assert c.get("/api/notes/library").status_code == 502
-    finally:
-        srv.shutdown()
+    assert "access-control-allow-origin" not in r.headers
 
 
 # ---- SPA fallback -------------------------------------------------------
@@ -259,7 +218,7 @@ def test_spa_fallback(brain, tmp_path):
     (static / "index.html").write_text("<html>spa</html>")
     (static / "assets" / "a.js").write_text("console.log(1)")
     c = TestClient(create_app(brain_dir=str(brain), static_dir=str(static)))
-    for p in ["/", "/atlas/entities/personal/about.md", "/notes/abc123"]:
+    for p in ["/", "/atlas/entities/personal/about.md", "/calendar"]:
         r = c.get(p)
         assert r.status_code == 200 and "spa" in r.text
         assert r.headers["cache-control"] == "no-cache"

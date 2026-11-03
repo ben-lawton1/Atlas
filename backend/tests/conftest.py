@@ -19,4 +19,4 @@ def brain(tmp_path):
 
 @pytest.fixture()
 def client(brain):
-    return TestClient(create_app(brain_dir=str(brain), static_dir="", chalk_api_url="http://127.0.0.1:9"))
+    return TestClient(create_app(brain_dir=str(brain), static_dir=""))
