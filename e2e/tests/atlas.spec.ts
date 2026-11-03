@@ -6,7 +6,7 @@ async function openAbout(page: Page) {
   await page.locator('[data-testid="atlas-file"][data-path="entities/personal/about.md"]').click();
 }
 
-test('home shows the dashboard panels and both recent cards', async ({ page }) => {
+test('home shows the dashboard panels and the recent-files card (no notes card)', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('home')).toBeVisible();
   await expect(page.getByTestId('home-date')).not.toBeEmpty();
@@ -21,10 +21,8 @@ test('home shows the dashboard panels and both recent cards', async ({ page }) =
   const atlasCard = page.getByTestId('card-recent-atlas');
   await expect(atlasCard.getByRole('heading', { name: 'Recently changed in Atlas' })).toBeVisible();
   await expect(atlasCard.locator('a').first()).toBeVisible();
-  const notesCard = page.getByTestId('card-recent-notes');
-  await expect(notesCard.getByRole('heading', { name: 'Recent notes' })).toBeVisible();
-  await expect(notesCard.getByRole('link', { name: /Page Two/ })).toBeVisible();
-  await expect(notesCard.getByRole('link', { name: /Page One/ })).toBeVisible();
+  // Chalk notes were removed (D41)
+  await expect(page.getByTestId('card-recent-notes')).toHaveCount(0);
   // forbidden files never show up as recent
   await expect(atlasCard).not.toContainText('.env');
   await expect(atlasCard).not.toContainText('sqlite');
@@ -54,9 +52,7 @@ test('rail navigates to calendar and portfolio; deep links survive a refresh', a
   await page.getByTestId('rail-brain').click();
   await expect(page).toHaveURL(/\/atlas$/);
   await expect(page.getByTestId('rail-brain')).toHaveAttribute('aria-current', 'page');
-  await page.getByTestId('rail-notes').click();
-  await expect(page).toHaveURL(/\/notes$/);
-  await expect(page.getByTestId('rail-notes')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('rail-notes')).toHaveCount(0);
   await page.getByTestId('rail-home').click();
   await expect(page.getByTestId('home')).toBeVisible();
 });
@@ -106,28 +102,21 @@ test('Ctrl+Backslash toggles the sidebar and the choice survives a reload', asyn
   await expect(sidebar).toHaveAttribute('data-open', 'true');
   await page.reload();
   await expect(sidebar).toHaveAttribute('data-open', 'true');
-  // Notes and Brain in the rail reveal a hidden sidebar
+  // Brain in the rail reveals a hidden sidebar
   await page.keyboard.press('Control+Backslash');
   await expect(sidebar).toHaveAttribute('data-open', 'false');
   await page.getByTestId('rail-brain').click();
   await expect(sidebar).toHaveAttribute('data-open', 'true');
 });
 
-test('command box: Ctrl+K focuses, jumps to a note page and to a brain file', async ({ page }) => {
+test('command box: Ctrl+K focuses, jumps to a brain file', async ({ page }) => {
   await page.goto('/');
   const box = page.getByTestId('command-box');
   await page.locator('body').click({ position: { x: 5, y: 5 } });
   await page.keyboard.press('Control+k');
   await expect(box).toBeFocused();
   // an empty query lists the views
-  await expect(page.getByTestId('command-result')).toHaveCount(5);
-  await box.fill('Page One');
-  await expect(page.getByTestId('command-result').first()).toContainText('Page One');
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/notes\/p1$/);
-  await expect(box).toHaveValue('');
-
-  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('command-result')).toHaveCount(4);
   await box.fill('about.md');
   await expect(page.getByTestId('command-result').first()).toContainText('entities/personal/about.md');
   await page.keyboard.press('Enter');
@@ -198,55 +187,23 @@ test('forbidden files are not reachable', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'raw', exact: true })).toHaveCount(0);
 });
 
-test('open a note page: iframe shows the stub; sidebar toggle; switching pages keeps the iframe', async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('note-page').filter({ hasText: 'Page One' }).click();
-  await expect(page).toHaveURL(/\/notes\/p1$/);
-  const frame = page.frameLocator('[data-testid="notes-frame"]');
-  await expect(frame.locator('#board-id')).toHaveText('p1');
-  await expect(frame.locator('#embed-flag')).toHaveText('yes');
-  await expect(page.getByTestId('notes-title')).toContainText('Page One');
-
-  const button = page.getByTestId('notebooks-button');
-  await expect(button).toHaveAttribute('aria-pressed', 'false');
-  await button.click();
-  await expect(frame.locator('#sidebar-state')).toHaveText('open');
-  await expect(button).toHaveAttribute('aria-pressed', 'true');
-  await button.click();
-  await expect(frame.locator('#sidebar-state')).toHaveText('closed');
-  await expect(button).toHaveAttribute('aria-pressed', 'false');
-
-  // mark the document inside the iframe; a reload would wipe the marker
-  await frame.locator('body').evaluate(() => { (window as unknown as { __marker: string }).__marker = 'kept'; });
-  await page.getByTestId('note-page').filter({ hasText: 'Page Two' }).click();
-  await expect(frame.locator('#board-id')).toHaveText('p2');
-  await expect(page).toHaveURL(/\/notes\/p2$/);
-  await expect(page.locator('[data-testid="note-page"][data-id="p2"]')).toHaveAttribute('aria-current', 'page');
-  expect(await frame.locator('body').evaluate(() => (window as unknown as { __marker?: string }).__marker)).toBe('kept');
-
-  // deep link / refresh on a notes URL
-  await page.reload();
-  await expect(page.frameLocator('[data-testid="notes-frame"]').locator('#board-id')).toHaveText('p2');
-});
-
-test('Home button returns home', async ({ page }) => {
-  await page.goto('/notes/p1');
-  await expect(page.frameLocator('[data-testid="notes-frame"]').locator('#board-id')).toHaveText('p1');
+test('Home button returns home from a brain file', async ({ page }) => {
+  await page.goto('/atlas/entities/personal/about.md');
+  await expect(page.getByTestId('preview').getByRole('heading', { name: 'Personal' })).toBeVisible();
   await page.getByTestId('rail-home').click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('home')).toBeVisible();
-  await expect(page.getByTestId('notes-frame')).toHaveCount(0);
+  await expect(page.getByTestId('preview')).toHaveCount(0);
 });
 
-test('a missing Chalk shows a friendly message and the rest of Atlas works', async ({ page }) => {
-  await page.route('**/api/notes/library', (route) =>
-    route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ detail: "Chalk isn't reachable" }) }),
-  );
-  await page.goto('/');
-  await expect(page.getByTestId('notes-error')).toContainText("Chalk isn't running at http://chalk-stub:8081");
-  await expect(page.getByTestId('card-recent-notes')).toContainText("Chalk isn't running");
-  await openAbout(page);
-  await expect(page.getByTestId('preview').getByRole('heading', { name: 'Personal' })).toBeVisible();
+test('the removed Chalk notes routes: /notes/p1 renders Home with no iframe; the library API is a JSON 404', async ({ page, request }) => {
+  await page.goto('/notes/p1');
+  await expect(page.getByTestId('home')).toBeVisible();
+  await expect(page.locator('iframe')).toHaveCount(0);
+  const r = await request.get('/api/notes/library');
+  expect(r.status()).toBe(404);
+  expect(r.headers()['content-type']).toContain('application/json');
+  expect(await r.json()).toEqual({ detail: 'Not found' });
 });
 
 test('narrow screens: the left panel is collapsible', async ({ page }) => {
@@ -255,8 +212,10 @@ test('narrow screens: the left panel is collapsible', async ({ page }) => {
   await expect(page.getByTestId('sidebar')).toBeHidden();
   await page.getByTestId('nav-toggle').click();
   await expect(page.getByTestId('sidebar')).toBeVisible();
-  await page.getByTestId('note-page').filter({ hasText: 'Page One' }).click();
-  await expect(page).toHaveURL(/\/notes\/p1$/);
+  await page.getByRole('button', { name: 'entities', exact: true }).click();
+  await page.getByRole('button', { name: 'personal', exact: true }).click();
+  await page.locator('[data-testid="atlas-file"][data-path="entities/personal/about.md"]').click();
+  await expect(page).toHaveURL(/\/atlas\/entities\/personal\/about\.md$/);
   await expect(page.getByTestId('sidebar')).toBeHidden();
 });
 
