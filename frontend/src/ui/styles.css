@@ -530,3 +530,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .view-h1 { font-size: 1.625rem; line-height: 2rem; }
 }
 @media (min-width: 761px) { .nav-scrim { display: none; } }
+
+/* ---------- mini month (react-day-picker, read-only) ---------- */
+.atlas-cal-grid { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px; text-align: center; }
+.atlas-cal-weekday { padding-bottom: 4px; font: 600 0.75rem/1rem var(--font-ui); color: var(--label-secondary); }
+.atlas-cal-day { padding: 0; font: 500 0.8125rem/1.125rem var(--font-ui); color: var(--label); font-variant-numeric: tabular-nums; }
+.atlas-cal-cell { height: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 11px; }
+.atlas-cal-dot { width: 4px; height: 4px; border-radius: 2px; background: var(--accent); }
+.atlas-cal-today .atlas-cal-cell { background: var(--today-fill); color: var(--on-today); font-weight: 700; }
+.atlas-cal-hidden { visibility: hidden; }
