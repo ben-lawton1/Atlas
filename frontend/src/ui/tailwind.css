@@ -46,3 +46,9 @@
   --shadow-main: var(--main-shadow);
   --shadow-card: var(--card-shadow);
 }
+
+/* No blinking text caret on non-editable text (Chromium/Edge caret browsing, F7). Editable fields and the terminal keep theirs. */
+@layer base {
+  html { caret-color: transparent; }
+  input, textarea, select, [contenteditable]:not([contenteditable="false"]), .xterm, .xterm * { caret-color: auto; }
+}
