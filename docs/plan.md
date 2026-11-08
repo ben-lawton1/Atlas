@@ -70,3 +70,19 @@ Checks 2026-11-03 (Docker): backend 111 passed, frontend 64 unit tests passed, e
 
 - **Running bridge locks its build:** `bridge/dist/atlas-terminal.exe` is locked while it runs, so `bridge-build` fails then. Consider running a copy from a stable folder.
 - Dashboards, remote access and authentication (D10).
+
+## Round 6 (2026-11-08): liquid glass, branch `feat/glass-home` (off `feat/apple-design-home`)
+
+Spec: `docs/glass-spec.md`. Decisions D43, D44.
+
+| # | Slice | Status |
+|---|---|---|
+| 23 | Deps (Tailwind v4, lucide-react, cmdk, recharts, motion, react-day-picker, Radix Dialog, clsx, tailwind-merge, cva), `@/` alias, ui primitives, contrast script | done |
+| 24 | Shell: backdrop, glass nav, top bar, command dialog, tab frames, Settings, six new routes | done |
+| 25 | Home: greeting header, stat tiles, month calendar, recent files, Recharts portfolio; Calendar and Portfolio views restyled | done |
+| 26 | e2e rewritten for the new structure, screenshots (`home-{light,dark,phone-dark,empty-light}`, `settings-dark`) | done |
+| 27 | Docs: design.md, decisions D43 and D44, plan, CLAUDE.md | done |
+
+Checks 2026-11-08 (Docker): web unit 74 passed, api unit 111 passed, `npm run build` ok, e2e 33/33. Main chunk 129.5 kB gzip before, 227.5 kB after (+98 kB, under the 150 kB limit); Recharts is a separate lazy chunk (94.4 kB gzip). Not pushed.
+
+Next: connectors (calendar, portfolio, mail, Slack), Tasks storage, Notes redesign.

@@ -2,12 +2,13 @@
 
 Front end for Ben's AI operating system Atlas. The brain itself lives in `/home/ben/Atlas/aios`; this repo only reads it. Decisions: `docs/decisions.md`. Plan and status: `docs/plan.md`.
 
-**Design baseline:** `docs/design.md` (D42), grounded in the `/apple-design` skill. Read it before any UI change and use only its tokens.
+**Design baseline:** `docs/design.md` (D42, D43), grounded in the `/apple-design` skill. Read it before any UI change and use only its tokens.
 
 ## Stack and layout
 
 - `backend/` FastAPI (Python 3.14): `app/guard.py` (D7), `app/brain.py` (tree, file, recent), `app/main.py` (routes, SPA fallback). Tests in `backend/tests/`, fixture brain in `backend/tests/fixtures/aios/`.
-- `frontend/` React 19 + TypeScript + Vite, hand-written History API router (`src/router.ts`), `markdown-it` with `html: false`. `src/ui/Sidebar.tsx` is the read-only brain tree in Chalk's sidebar style (pure logic in `src/tree.ts`); `src/ui/terminal/` is the global terminal dock (state in `terminalStore.ts`, xterm lazy-loaded). `src/ui/Rail.tsx` is the left nav, `src/ui/CommandBox.tsx` the Ctrl+K jump box (views and brain files, matching in `src/commands.ts`). `src/ui/dashboards/` holds the calendar, portfolio and briefing panels and views; their data logic is in `src/calendar.ts`, `src/portfolio.ts`, `src/briefing.ts`.
+- `frontend/` React 19 + TypeScript + Vite, hand-written History API router (`src/router.ts`), `markdown-it` with `html: false`. `src/ui/Sidebar.tsx` is the read-only brain tree in Chalk's sidebar style (pure logic in `src/tree.ts`); `src/ui/terminal/` is the global terminal dock (state in `terminalStore.ts`, xterm lazy-loaded). `src/ui/Nav.tsx` is the glass left nav, `src/ui/TopBar.tsx` the top bar, `src/ui/CommandBox.tsx` the Ctrl+K dialog (cmdk in a Radix Dialog; views and brain files, matching in `src/commands.ts`). `src/ui/dashboards/` holds Home's header, month calendar and portfolio card plus the calendar and portfolio views, `src/ui/frames/` the tab frames and Settings; data logic is in `src/calendar.ts`, `src/portfolio.ts`, `src/briefing.ts`, `src/home.ts`.
+- Styling (D43): Tailwind v4 without preflight (`src/ui/tailwind.css`), tokens in `src/ui/styles.css`, shadcn-style primitives in `src/components/ui` (`@/` alias to `src/`), lucide-react icons, cmdk, react-day-picker, Recharts (lazy chunk), motion. **All blur lives in `components/ui/glass.tsx`.** `frontend/scripts/contrast.mjs` checks text contrast; rerun it when a color token changes.
 - `backend/app/dashboards.py` serves `/api/calendar`, `/api/portfolio`, `/api/briefing` (D37). Connectors plug in as sources (`CalendarSource`, `PortfolioSource`, `BriefingSource`) via `create_app(dashboard_sources=...)`; the response shapes are a contract with the frontend types, so change both together.
 - `bridge/` Go terminal bridge `atlas-terminal` (runs on Windows, never in Docker for real use). Built and tested only via `compose.tools.yaml` (project `atlas-tools`); output in `bridge/dist/` (git-ignored).
 - `e2e/` Playwright (runs in Docker).

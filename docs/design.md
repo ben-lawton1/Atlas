@@ -1,134 +1,155 @@
 # Atlas design baseline
 
-Atlas's UI follows Apple's Human Interface Guidelines as design principles (the `/apple-design` skill, `~/.claude/skills/apple-design-skill/`). Atlas is a web app used on a Windows laptop with a pointer, touch and a stylus, so the foundations apply (accessibility, color, type, layout, writing) and macOS conventions guide the desktop shell. Decision: D42.
+Atlas's UI follows Apple's Human Interface Guidelines as design principles (the `/apple-design` skill, `~/.claude/skills/apple-design-skill/`), and since round 6 the look of Ben's "Liquid Glass Dashboard" mockup. Atlas is a web app used on a Windows laptop with a pointer, touch and a stylus. Decisions: D42 (baseline), D43 (glass), D44 (tab frames).
 
 Each rule cites the HIG page it comes from (`file.md › Heading`), or says it is our own call.
 
 ## Principles in one line each
 
-- **One container level.** Group with space and a single grouped surface, not a card inside a card inside a card (`layout.md › Visual hierarchy`: "use negative space, container shapes, or separator lines").
-- **One color, one meaning** (`color.md › Best practices`). Accent = interactive or selected. Green = gain or done-positive. Red = loss or error. Amber = warning. Category colors are data only.
-- **Accent used sparingly**: primary actions, current selection, focus ring (`branding.md › Best practices`: "Minimize its use on controls").
-- **Both appearances**, following the OS setting, with no in-app switch (`dark-mode.md › Best practices`: "Avoid offering an app-specific appearance setting"). The terminal dock stays dark in both: it is a content surface with its own palette (`dark-mode.md`: "In rare cases, consider using only a dark appearance").
-- **Text scales**: type sizes are in `rem` so the browser's font-size setting enlarges text, and layouts stack instead of clipping (`accessibility.md › Vision`: "enlarge text by at least 200 percent"; `layout.md › Adaptability`).
-- **Nothing by color alone** (`accessibility.md › Vision`): today says "Today", gains carry ▲ and a sign, done tasks are struck through and say "(done)" to screen readers.
-- **No controls that do nothing** (D38). Read-only items must not look interactive: no accent on read-only checkboxes.
+- **Glass only on the functional layer** (`liquid-glass.md › Where the material belongs`): nav, top bar and overlays (command dialog, phone drawer) are glass. The main panel is one standard material. Cards are plain translucent fills with no blur. That is three blurred surfaces; all blur lives in `src/components/ui/glass.tsx`.
+- **One container level.** Glass behind, main panel, cards on it, rows inside cards. No cards inside rows (`layout.md › Visual hierarchy`).
+- **One color, one meaning** (`color.md › Best practices`). Accent = interactive or selected. Green = gain. Red = loss or error. Category colors are data only. Today in a calendar is a white (dark) or ink (light) fill, not accent.
+- **Both appearances**, following the OS, no in-app switch (`dark-mode.md`). The terminal dock stays dark in both.
+- **Text scales**: sizes in `rem`, layouts reflow instead of clipping (`accessibility.md › Vision`).
+- **Nothing by color alone**: today says "Today" to screen readers (`aria-current="date"`), gains carry ▲ or ▼ and a sign, done tasks are struck through and say "(done)".
+- **No controls that do nothing** (D38). No bell, theme toggle, Customize, New item, fake badges. Read-only calendar days are not buttons.
+- **Reduced transparency and increased contrast** (`accessibility.md`): opaque fills, borders at .28, no blur (see below). Focus rings stay (2px accent).
+- **Reduced motion**: `MotionConfig reducedMotion="user"`; CSS transitions are off under `prefers-reduced-motion`.
 
-## Tokens (CSS custom properties, `frontend/src/ui/styles.css`)
+## Stack
 
-Contrast is WCAG, computed from the hex values (script in the PR notes). Text needs 4.5:1, non-text marks 3:1.
+Tailwind v4 through the Vite plugin, **without preflight** (`src/ui/tailwind.css`; layers `base, theme, utilities`, our reset in `styles.css` sits in `@layer base` so utilities win on `a` and `button`). Tokens are CSS custom properties in `src/ui/styles.css`, mapped to Tailwind names in `@theme inline` (`text-label`, `bg-card`, `rounded-card`, ...); never raw hex in classes. shadcn-shaped primitives in `src/components/ui/` (`glass`, `button`, `command`, `calendar`), `@/` alias to `src/`. Icons lucide-react, command box cmdk in a Radix Dialog, mini month react-day-picker, sparkline Recharts (lazy chunk), motion for hover lifts (cards `y: -2`, 150ms) and the route fade (180ms, 4px).
 
-### Surfaces
+## Backdrop and materials (D43)
 
-| Token | Light | Dark | Role |
-|---|---|---|---|
-| `--surface-base` | `#eceef1` | `#141518` | window background; rail and sidebar sit on it |
-| `--surface-content` | `#ffffff` | `#1c1d21` | the content pane (top bar + main) |
-| `--surface-grouped` | `#f3f4f6` | `#25272c` | grouped containers and inputs inside content |
-| `--surface-overlay` | `#ffffff` | `#25272c` | menus, command list (with `--shadow-overlay`) |
-| `--surface-hover` | `rgba(0,0,0,.05)` | `rgba(255,255,255,.06)` | hover fill |
-| `--surface-selected` | `rgba(31,95,196,.12)` | `rgba(120,169,255,.16)` | current row / nav item |
-| `--separator` | `rgba(0,0,0,.10)` | `rgba(255,255,255,.10)` | hairlines |
-| `--separator-strong` | `rgba(0,0,0,.18)` | `rgba(255,255,255,.18)` | control borders |
+Fixed `.atlas-backdrop` behind everything: four radial blobs (teal 10%/15%, violet 90%/10%, rose 78%/95%, green 22%/92%) over a 135deg gradient. Glass needs color behind it.
 
-### Content and signal colors
+| Area | Dark | Light |
+|---|---|---|
+| Base gradient | `#0b1020 → #121029 → #160f1c` | `#eef2f8 → #f1eef8 → #f7eff2` |
+| Blobs | `rgba(38,120,150,.55)`, `(96,64,170,.55)`, `(150,70,90,.45)`, `(30,110,90,.45)` | `rgba(80,170,200,.35)`, `(150,120,230,.32)`, `(235,140,160,.28)`, `(90,190,150,.28)` |
+| Glass (nav, bar, overlays) | fill `rgba(20,24,40,.62)`, border `rgba(255,255,255,.10)` | fill `rgba(255,255,255,.62)`, border `rgba(255,255,255,.70)` |
+| Glass recipe | `blur(28px) saturate(160%)`, shadow `0 20px 50px rgba(0,0,0,.35)` + inset top highlight; radius nav 28, bar 24 | shadow tinted `rgba(30,40,80,.14)` |
+| Main panel (standard material) | fill `rgba(18,22,38,.55)`, blur 28, no inset highlight, radius 30, padding 28 (16 compact) | `rgba(255,255,255,.55)` |
+| Card (no blur) | fill `rgba(255,255,255,.07)`, border `.12`, shadow `0 10px 26px rgba(0,0,0,.25)`, radius 24 (sections) / 22 (stat tiles), padding 22 / 18 | fill `.55`, border `rgba(255,255,255,.7)`, shadow `rgba(30,40,80,.08)` |
+| Row inside a card | `rgba(255,255,255,.07)`, radius 14, padding 10×12 | `rgba(255,255,255,.6)` |
+| Reduced transparency / more contrast | glass and main `#151a2b`, cards `#1d2336`, rows `#262d45` | `#f4f6fa`, `#ffffff`, `#eef1f7`; borders `.28`; no `backdrop-filter` |
 
-| Token | Light | Contrast | Dark | Contrast |
-|---|---|---|---|---|
-| `--label` | `#1d1f23` | 16.5:1 on content | `#ecedf0` | 14.4:1 on content |
-| `--label-secondary` | `#585e69` | 6.5:1 content, 5.6:1 base | `#a4a9b2` | 7.1:1 content, 6.3:1 grouped |
-| `--label-tertiary` | `#646a75` | 5.4:1 content, 4.9:1 grouped | `#8f949e` | 5.5:1 content, 4.9:1 grouped |
-| `--accent` | `#1f5fc4` | 6.0:1 content, 5.2:1 base | `#78a9ff` | 7.2:1 content, 6.4:1 grouped |
-| `--on-accent` | `#ffffff` | 6.0:1 on accent | `#0b1830` | 7.5:1 on accent |
-| `--positive` | `#17803f` | 5.0:1 content, 4.6:1 grouped | `#4fc48a` | 7.7:1 content |
-| `--negative` | `#c2362b` | 5.5:1 content | `#ff7b70` | 6.7:1 content |
-| `--warning` | `#9a5b00` | 5.4:1 content | `#f0b04a` | 8.8:1 content |
+### Text and signal colors
 
-`--label-tertiary` is text-safe on every surface; there is no lower-contrast text color. Disabled controls use `--label-tertiary` plus `opacity: .6` and `cursor: default` (disabled text is exempt from the contrast minimum).
+| Token | Light | Dark |
+|---|---|---|
+| `--label` | `#141826` | `#eef1f7` |
+| `--label-strong` | `#0b0f1c` | `#ffffff` |
+| `--label-secondary` | `#3f4656` | `#c4cbd9` |
+| `--label-tertiary` | `#545b6b` | `#b2bacb` |
+| `--accent` / `--on-accent` | `#1f5fc4` / `#ffffff` | `#8cb8ff` / `#0b1830` |
+| `--positive` | `#0f7036` | `#6fdba8` |
+| `--negative` | `#ad2a20` | `#ff9d8f` |
+| `--warning` | `#7f4a00` | `#f0b04a` |
+| today fill / text | `#141826` / `#ffffff` | `#f2f4f8` / `#0b0f1c` |
 
-### Category colors (data only: calendar tags, allocation)
+The mockup's secondary text (`#b3bccd`, `#a3acc0`) and the D42 dark accent (`#78a9ff`) failed 4.5:1 on the brightest blob under card and row fills, so the dark values above are lighter. `frontend/scripts/contrast.mjs` computes every text token against the worst composite (each gradient stop, with each blob at full strength, then main, card, row; nav and bar use glass and the active item). Run: `docker run --rm -v "$PWD/frontend:/web" -w /web node:24.22.1-trixie-slim node scripts/contrast.mjs`. Result (all must be ≥ 4.5:1):
 
-Non-text marks, always next to a text label. All are ≥ 3:1 on `--surface-grouped`.
+```
+theme  token                      value                    ratio  worst surface                
+dark   --label                    #eef1f7                  8.15   row in card              ok  
+dark   --label-strong             #ffffff                  9.23   row in card              ok  
+dark   --label-secondary          #c4cbd9                  5.66   row in card              ok  
+dark   --label-tertiary           #b2bacb                  4.74   row in card              ok  
+dark   --accent                   #8cb8ff                  4.58   row in card              ok  
+dark   --positive                 #6fdba8                  5.44   row in card              ok  
+dark   --negative                 #ff9d8f                  4.60   row in card              ok  
+dark   --warning                  #f0b04a                  4.84   row in card              ok  
+dark   today / selected segment   #0b0f1c on #f2f4f8       17.35  solid fill               ok  
+dark   on-accent                  #0b1830 on #8cb8ff       8.77   solid fill               ok  
+light  --label                    #141826                  14.54  main panel               ok  
+light  --label-strong             #0b0f1c                  15.72  main panel               ok  
+light  --label-secondary          #3f4656                  7.78   main panel               ok  
+light  --label-tertiary           #545b6b                  5.60   main panel               ok  
+light  --accent                   #1f5fc4                  4.95   main panel               ok  
+light  --positive                 #0f7036                  5.10   main panel               ok  
+light  --negative                 #ad2a20                  5.52   main panel               ok  
+light  --warning                  #7f4a00                  6.00   main panel               ok  
+light  today / selected segment   #ffffff on #141826       17.67  solid fill               ok  
+light  on-accent                  #ffffff on #1f5fc4       6.01   solid fill               ok  
+dark   --label                    #eef1f7                  13.79  opaque card              ok  
+dark   --label-strong             #ffffff                  15.60  opaque card              ok  
+dark   --label-secondary          #c4cbd9                  9.58   opaque card              ok  
+dark   --label-tertiary           #b2bacb                  8.01   opaque card              ok  
+dark   --accent                   #8cb8ff                  7.74   opaque card              ok  
+dark   --positive                 #6fdba8                  9.19   opaque card              ok  
+dark   --negative                 #ff9d8f                  7.78   opaque card              ok  
+dark   --warning                  #f0b04a                  8.18   opaque card              ok  
+light  --label                    #141826                  16.33  opaque panel             ok  
+light  --label-strong             #0b0f1c                  17.66  opaque panel             ok  
+light  --label-secondary          #3f4656                  8.74   opaque panel             ok  
+light  --label-tertiary           #545b6b                  6.29   opaque panel             ok  
+light  --accent                   #1f5fc4                  5.56   opaque panel             ok  
+light  --positive                 #0f7036                  5.72   opaque panel             ok  
+light  --negative                 #ad2a20                  6.20   opaque panel             ok  
+light  --warning                  #7f4a00                  6.73   opaque panel             ok  
 
-| Token | Light | Dark | Calendar tag |
-|---|---|---|---|
-| `--cat-1` | `#0f7c86` teal | `#4cc9d4` | School |
-| `--cat-2` | `#b35900` orange | `#f2a541` | Work |
-| `--cat-3` | `#7a4fc9` purple | `#c3a6f0` | Build |
-| `--cat-4` | `#b8407a` pink | `#f08cbf` | Health |
-| `--cat-5` | `#7a6800` olive | `#d9c45a` | Money |
-| `--cat-6` | `#646a75` gray | `#8f949e` | Life, fallback |
+All text pairs >= 4.5:1
+```
 
-### Increased contrast
+`--label-tertiary` is text-safe on every surface; there is no lower-contrast text color. Disabled controls use `--label-tertiary` plus `opacity: .6` (exempt from the minimum).
 
-`@media (prefers-contrast: more)`: separators to `.28` alpha, `--separator-strong` to `.45`, `--label-secondary` to `#3d424a` / `#c9cdd3`, `--label-tertiary` equal to the normal secondary value (`color.md › Best practices`: "an increased contrast option for each variant").
+### Category colors (data only: calendar tags, allocation, symbol tile underline)
+
+Non-text marks beside a text label. `--cat-1..6` are unchanged from D42 (teal, orange, purple, pink, olive, gray; light and dark variants in `styles.css`).
 
 ### Type
 
-One family: `--font-ui: system-ui, "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif` (Segoe UI Variable on Windows, SF on Mac). `--font-mono` only for code, file contents and the terminal. Numbers use `font-variant-numeric: tabular-nums`, not monospace (`typography.md › Conveying hierarchy`: "Minimize the number of typefaces").
+One family: `--font-ui` system stack (no network fonts). Numbers use `tabular-nums`. Nothing below 12px, no weights below 400.
 
-| Token | Size / line | Weight | Use |
-|---|---|---|---|
-| `--text-large-title` | 1.75rem / 2.25rem | 650 | page lead (rare) |
-| `--text-title` | 1.375rem / 1.875rem | 500 | the briefing lead on Home |
-| `--text-headline` | 1.0625rem / 1.375rem | 600 | section titles |
-| `--text-body` | 0.9375rem / 1.375rem | 400 | default |
-| `--text-callout` | 0.8125rem / 1.125rem | 400 | rows, meta, controls |
-| `--text-caption` | 0.75rem / 1rem | 500 | eyebrows, times, small labels (minimum size) |
+| Use | Size / line | Weight |
+|---|---|---|
+| h1 (view title) | 2rem / 2.5rem, tracking -0.02em (1.625rem on phone) | 700 |
+| Stat value | 1.75rem | 700 |
+| Portfolio total | 1.875rem | 700 |
+| Card title | 1rem | 700 |
+| Body | 0.875rem | 400 |
+| Meta, rows | 0.8125rem | 400 to 600 |
+| Caption | 0.75rem | 500 to 600 |
+| Eyebrow | 0.75rem, uppercase, .08em | 600 |
 
-Each token is a `font` shorthand value without the family, e.g. `--text-headline: 600 1.0625rem/1.375rem`; use `font: var(--text-headline) var(--font-ui)`. Nothing below 12px (`typography.md › Ensuring legibility`, macOS minimum 10 pt). No weights below 400 (`typography.md`: "avoid light font weights").
+### Controls, space and motion
 
-### Space, radius, size
-
-- Space: `--space-1..6` = 4, 8, 12, 16, 24, 32px.
-- Radius: `--radius-control: 6px`, `--radius-group: 10px`, `--radius-pane: 12px`.
-- Controls: 32px tall by default (desktop default 28 pt, `accessibility.md › Mobility`). Under `@media (pointer: coarse)` every control and list row is at least 44px (the Yoga's touch screen; iOS default 44 pt).
-- Shadows only on overlays (`--shadow-overlay`); panes use a hairline, not a shadow.
-- Motion: hover and press transitions ≤ 120ms; nothing animates on load; all transitions off under `prefers-reduced-motion: reduce`.
+- Every control and list row is at least 44px tall (pills 44, icon buttons 44 circles, nav items 44 radius 14). The portfolio segmented control is 28px visually, 44px hit area on `pointer: coarse`.
+- Active nav item: fill (`rgba(255,255,255,.12)` dark, `.7` light), hairline border, accent icon. Active segment: today fill with its text color.
+- Space scale 4, 8, 12, 16, 24, 32. Page padding 20 (12 under 760px), gap 20, max width 1480 centered, nav 232px (`--nav-w`).
+- Shadows: glass and cards as in the table; overlays also carry `--shadow-overlay`.
+- Motion: card hover lift, route fade, hover and press transitions ≤ 180ms; nothing else animates.
 
 ## Shell
 
 ```
-┌ base ──────────────────────────────────────────────────────────────┐
-│ rail      sidebar (hideable)   ┌ content pane ─────────────────────┐ │
-│ ● Atlas   entities ▸           │ ☰  Home        [⌕ Jump to…  Ctrl K] >_│
-│ ⌂ Home    pipelines ▸          ├───────────────────────────────────┤ │
-│ ▦ Cal…                         │ main                               │ │
-│ ↗ Port…                        │                                    │ │
-│ ◉ Brain                        └───────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────┘
+┌ backdrop (fixed blobs) ───────────────────────────────────────────────┐
+│ ┌ nav (glass) ┐ ┌ top bar (glass) ─────────────────────────────────┐ │
+│ │ [◎] Atlas   │ │ ▢  [⌕ Search brain, views…     Ctrl K]  >_  (BL) │ │
+│ │ TODAY       │ └──────────────────────────────────────────────────┘ │
+│ │ Home Calendar│ ┌ main (material) ────────────────────────────────┐ │
+│ │ Tasks Notes │ │ brain tree │ view content (scrolls)              │ │
+│ │ Portfolio   │ │ (280px)    │                                     │ │
+│ │ WORKSPACE   │ ├────────────┴─────────────────────────────────────┤ │
+│ │ Projects …  │ │ terminal dock (dark, inside the main panel)      │ │
+│ │ [Connectors]│ └──────────────────────────────────────────────────┘ │
+│ └─────────────┘                                                       │
+└───────────────────────────────────────────────────────────────────────┘
 ```
 
-Rail and sidebar sit on `--surface-base` with no box of their own (a source list, `sidebars.md`). The content pane is one `--surface-content` rectangle with `--radius-pane` and a hairline; the top bar is its first row with a hairline under it. Current nav item: `--surface-selected` fill, `--label` text, accent icon.
+Under 760px the nav is a drawer (menu button in the top bar, scrim, Escape closes) and the brain tree is an overlay inside the main panel. The top bar has the sidebar toggle (Ctrl+\), the search field (opens the command dialog, Ctrl+K), the terminal button and the identity chip (initials `BL` on a darkened `#2f7399 → #6a49c4` gradient so white text passes, "Ben Lawton", brain label). The connectors card at the bottom of the nav reads "n of 3 connected" from the three feeds and links to Settings.
 
 ## Home
 
-Thesis: Home answers "what does today hold, and what changed in my brain?" Its signature is **Atlas speaks first**: the briefing sentence Atlas writes is the largest text on the screen, the lead of the page. Everything else is quiet.
+Order: header, stat tiles, three cards.
 
-Order follows importance (`layout.md › Visual hierarchy`):
+- Header: `h1` "Good morning/afternoon/evening, Ben" (local hour), then the date and the briefing sentence ("No briefing yet." when not connected). Connected briefings add compact Up next and Suggestions rows.
+- Stat tiles: Events today, Tasks due today (always "—", tasks aren't connected), Brain changes this week (real, from recent files), Portfolio today (▲/▼ and sign). "—" appears only in tiles.
+- Cards: Calendar (read-only mini month, Monday first, event dots, Today list, month arrows refetch the 42-day grid), Recently changed (folder tag, file name, relative time), Portfolio (range segments 1D 1W 1M 1Y, total, change, sparkline, holdings rows). Empty states are one sentence.
+- Loading shows the final layout with static placeholders plus a visually hidden `role="status"` message.
 
-```
-Regular (main ≥ 900px)                              Compact (< 760px)
-┌──────────────────────────────────────────────┐    ┌────────────────────┐
-│ Sunday, November 8               (callout 2°) │    │ Sunday, November 8 │
-│ Briefing lead in --text-title, ≤ 60ch         │    │ Briefing lead      │
-│ Up next                 Suggestions           │    │ Up next …          │
-│ 9:00  Standup  Mon·15m  • …                   │    │ Suggestions …      │
-│                                               │    │                    │
-│ This week  Nov 2 – 8 · 3 of 7 done  Open cal. │    │ This week          │
-│ ┌Mon 2┬Tue 3┬Wed 4┬Thu 5┬Fri 6┬Sat 7┬Today 8┐ │    │ ┌Mon 2  ○ task  ──┐│
-│ │○ …  │     │     │     │     │     │       │ │    │ │Tue 3  Nothing    ││
-│ └─────┴─────┴─────┴─────┴─────┴─────┴───────┘ │    │ └─────────────────┘│
-│ Recently changed        │ Portfolio           │    │ Recently changed   │
-│ ┌ about.md      2h ago ┐│ ┌ $12,340.00       ┐│    │ Portfolio          │
-│ │ entities/personal    ││ │ ▲ $40 · 0.3% today││    └────────────────────┘
-│ └──────────────────────┘│ └ chart · alloc    ┘│
-└──────────────────────────────────────────────┘
-```
+## Tab frames (D44)
 
-- Content width capped at 1200px, centered, 32px side padding (16px compact).
-- Not connected (today's reality): the lead reads "No briefing yet." in `--label-secondary`, with one callout line under it. The calendar shows day heads only (no tall empty columns) and one line of copy; the portfolio shows its title and one line. Empty states are a sentence, not a dashed box.
-- Loading shows the final layout with static placeholder blocks plus a visually hidden `role="status"` message (`loading.md › Best practices`: "Show something as soon as possible").
-- Recent files: file name as the row title, folder as the subtitle, time trailing (`writing.md`: names people recognize; `lists-and-tables.md`: "Keep item text succinct").
-- Portfolio value uses `--text-title` weight 600 so the briefing keeps the one big moment. Chart line is `--positive` or `--negative` by the range's direction; gridlines `--separator`.
-- Copy is sentence case everywhere (the Windows convention), applied consistently.
+Calendar (week view plus an Upcoming card), Tasks, Notes, Portfolio, Projects, Messages, People, Brain, Settings. Each has an `h1` with `data-testid="view-title"` and a `data-testid="<route>-view"` wrapper. Empty frames are cards with a title, a "what goes here" line and one sentence naming the missing source; no buttons. Settings is read-only: connector status, appearance ("Follows your system setting."), terminal bridge address.
