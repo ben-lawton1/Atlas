@@ -16,7 +16,7 @@ export function Home() {
   const recent = useAsync(() => api.recent(8), 'recent');
 
   return (
-    <div className="pane-scroll">
+    <div>
       <div className="home" data-testid="home">
         <TodayHeader />
         <WeekCalendar

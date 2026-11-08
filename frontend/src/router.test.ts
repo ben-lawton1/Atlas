@@ -16,9 +16,13 @@ describe('parseRoute', () => {
     expect(parseRoute('/calendar')).toEqual({ name: 'calendar' });
     expect(parseRoute('/portfolio/')).toEqual({ name: 'portfolio' });
   });
-  it('no longer has a notes route: /notes/... falls back to home', () => {
-    expect(parseRoute('/notes/D9oZeaWacSE')).toEqual({ name: 'home' });
-    expect(parseRoute('/notes')).toEqual({ name: 'home' });
+  it('parses the tab frames (D44)', () => {
+    for (const name of ['tasks', 'notes', 'projects', 'messages', 'people', 'settings'] as const) {
+      expect(parseRoute('/' + name)).toEqual({ name });
+      expect(routeHref({ name })).toBe('/' + name);
+    }
+    expect(parseRoute('/notes/D9oZeaWacSE')).toEqual({ name: 'notes' });
+    expect(parseRoute('/unknown')).toEqual({ name: 'home' });
   });
   it('survives malformed escapes', () => {
     expect(parseRoute('/atlas/a%E0%A4%A.md')).toMatchObject({ name: 'atlas' });

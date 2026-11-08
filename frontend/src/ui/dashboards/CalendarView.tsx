@@ -24,7 +24,7 @@ export function CalendarView() {
     </>
   );
   return (
-    <div className="pane-scroll" data-testid="calendar-view">
+    <div data-testid="calendar-view">
       <div className="db-page">
         <WeekCalendar start={start} title={title} actions={actions} tall />
       </div>

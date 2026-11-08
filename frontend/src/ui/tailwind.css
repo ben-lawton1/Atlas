@@ -23,6 +23,7 @@
   --color-hover: var(--surface-hover);
   --color-selected: var(--surface-selected);
   --color-today: var(--today-fill);
+  --color-nav-active: var(--nav-active);
   --color-on-today: var(--on-today);
   --color-glass-edge: var(--glass-border);
   --color-main-edge: var(--main-border);

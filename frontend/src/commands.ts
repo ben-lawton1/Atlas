@@ -9,8 +9,14 @@ export const MAX_RESULTS = 8;
 export const VIEWS: Command[] = [
   { id: 'view:home', kind: 'view', label: 'Home', detail: 'View', href: '/' },
   { id: 'view:calendar', kind: 'view', label: 'Calendar', detail: 'View', href: '/calendar' },
+  { id: 'view:tasks', kind: 'view', label: 'Tasks', detail: 'View', href: '/tasks' },
+  { id: 'view:notes', kind: 'view', label: 'Notes', detail: 'View', href: '/notes' },
   { id: 'view:portfolio', kind: 'view', label: 'Portfolio', detail: 'View', href: '/portfolio' },
+  { id: 'view:projects', kind: 'view', label: 'Projects', detail: 'View', href: '/projects' },
+  { id: 'view:messages', kind: 'view', label: 'Messages', detail: 'View', href: '/messages' },
+  { id: 'view:people', kind: 'view', label: 'People', detail: 'View', href: '/people' },
   { id: 'view:brain', kind: 'view', label: 'Brain', detail: 'View', href: '/atlas' },
+  { id: 'view:settings', kind: 'view', label: 'Settings', detail: 'View', href: '/settings' },
 ];
 
 export function buildCommands(sections: AtlasNode[] | null): Command[] {
@@ -28,7 +34,7 @@ export function buildCommands(sections: AtlasNode[] | null): Command[] {
 /** Every whitespace-separated token must appear in label or detail. Rank: label prefix, label contains, detail only; views first on ties. */
 export function filterCommands(all: Command[], query: string, max = MAX_RESULTS): Command[] {
   const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return all.filter((c) => c.kind === 'view').slice(0, max);
+  if (tokens.length === 0) return all.filter((c) => c.kind === 'view');
   const scored: { c: Command; rank: number; i: number }[] = [];
   all.forEach((c, i) => {
     const label = c.label.toLowerCase();

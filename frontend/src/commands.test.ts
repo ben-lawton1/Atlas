@@ -15,7 +15,7 @@ const all = buildCommands(tree);
 
 describe('buildCommands', () => {
   it('has views and brain files', () => {
-    expect(all.filter((c) => c.kind === 'view')).toHaveLength(4);
+    expect(all.filter((c) => c.kind === 'view')).toHaveLength(10);
     expect(all.find((c) => c.kind === 'file')).toMatchObject({ label: 'about.md', detail: 'entities/personal/about.md', href: '/atlas/entities/personal/about.md' });
   });
   it('copes with missing data', () => {

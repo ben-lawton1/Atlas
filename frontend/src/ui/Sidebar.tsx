@@ -224,7 +224,7 @@ export function Sidebar(props: {
   const tabKey = preferred && visibleKeys.includes(preferred) ? preferred : visibleKeys[0] ?? null;
 
   return (
-    <nav className="sidebar" data-open={props.open} aria-label="Navigation" data-testid="sidebar" ref={navRef} onKeyDown={onTreeKeyDown}>
+    <nav className="sidebar-col" data-open={props.open} aria-label="Navigation" data-testid="sidebar" ref={navRef} onKeyDown={onTreeKeyDown}>
       <section className="group">
         <button
           type="button"
