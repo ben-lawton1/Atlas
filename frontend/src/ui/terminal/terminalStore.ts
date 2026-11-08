@@ -36,7 +36,7 @@ interface Runtime {
 
 const FONT = '"Cascadia Mono", Consolas, ui-monospace, monospace';
 const THEME = {
-  background: '#16181d', foreground: '#e6e8eb', cursor: '#5fd3a0', cursorAccent: '#16181d', selectionBackground: 'rgba(95, 211, 160, 0.3)',
+  background: '#16181d', foreground: '#e6e8eb', cursor: '#78a9ff', cursorAccent: '#16181d', selectionBackground: 'rgba(120, 169, 255, 0.3)',
   black: '#1f2228', red: '#ff6b6b', green: '#3fb984', yellow: '#f2a541', blue: '#6ea8fe', magenta: '#c792ea', cyan: '#5fd3d3', white: '#e6e8eb',
   brightBlack: '#6b727d', brightRed: '#ff8f8f', brightGreen: '#5fd3a0', brightYellow: '#ffc069', brightBlue: '#8fbcff', brightMagenta: '#d9b0f2', brightCyan: '#8ae5e5', brightWhite: '#ffffff',
 };

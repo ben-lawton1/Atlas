@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      body { background: #eceef1; }
+      @media (prefers-color-scheme: dark) { body { background: #141518; } }
+    </style>
     <title>Atlas</title>
   </head>
-  <body style="background:#16181d">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

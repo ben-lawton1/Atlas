@@ -36,12 +36,6 @@ function writeSidebarOpen(open: boolean): void {
 
 const VIEW_TITLES: Record<Route['name'], string> = { home: 'Home', calendar: 'Calendar', portfolio: 'Portfolio', atlas: 'Brain' };
 
-function todayLabel(): string {
-  const d = new Date();
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const rest = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${wd} · ${rest}`;
-}
 
 export function App() {
   const route = useRoute();
@@ -104,10 +98,9 @@ export function App() {
             </button>
             <div className="topbar-title">
               <h1 className="view-title" data-testid="view-title">{VIEW_TITLES[route.name]}</h1>
-              <span className="view-date" data-testid="home-date">{todayLabel()}</span>
             </div>
             <CommandBox sections={tree?.sections ?? null} />
-            {config && <span className="muted brain-label" title="Brain folder">{config.brainLabel}</span>}
+            {config && <span className="brain-label" title="Brain folder">{config.brainLabel}</span>}
             <TerminalButton />
           </header>
           <main className="main">
@@ -118,7 +111,7 @@ export function App() {
               (route.path ? (
                 <FilePreview key={route.path} path={route.path} />
               ) : (
-                <div className="pane-scroll"><p className="notice">Pick a file from the Atlas tree.</p></div>
+                <div className="pane-scroll"><p className="notice">Choose a file in the sidebar.</p></div>
               ))}
             <TerminalPanel />
           </main>
