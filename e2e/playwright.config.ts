@@ -17,6 +17,8 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 } },
+    { name: 'chromium', testIgnore: /caret\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 } },
+    // caret browsing (F7) on: the stray-caret regression spec
+    { name: 'caret', testMatch: /caret\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 }, deviceScaleFactor: 3, channel: 'chromium', launchOptions: { args: ['--enable-caret-browsing'] } } },
   ],
 });
