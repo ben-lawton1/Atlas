@@ -14,7 +14,7 @@ export function TopBar(props: {
   onOpenDrawer: () => void;
 }) {
   return (
-    <GlassPanel as="header" variant="bar" className="flex flex-none flex-wrap items-center gap-3.5 px-3.5 py-3">
+    <GlassPanel as="header" variant="bar" className="flex flex-none items-center gap-2 px-3 py-3 min-[761px]:gap-3.5 min-[761px]:px-3.5">
       <button type="button" className={`${iconBtn} drawer-btn`} aria-label="Open navigation" data-testid="drawer-toggle" onClick={props.onOpenDrawer}>
         <Menu aria-hidden="true" size={18} strokeWidth={1.8} />
       </button>
