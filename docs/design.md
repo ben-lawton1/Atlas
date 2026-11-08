@@ -118,9 +118,9 @@ One family: `--font-ui` system stack (no network fonts). Numbers use `tabular-nu
 
 - Every control and list row is at least 44px tall (pills 44, icon buttons 44 circles, nav items 44 radius 14). The portfolio segmented control is 28px visually, 44px hit area on `pointer: coarse`.
 - Active nav item: fill (`rgba(255,255,255,.12)` dark, `.7` light), hairline border, accent icon. Active segment: today fill with its text color.
-- Space scale 4, 8, 12, 16, 24, 32. Page padding 20 (12 under 760px), gap 20, max width 1480 centered, nav 232px (`--nav-w`).
+- Space scale 4, 8, 12, 16, 24, 32. Page padding 20 (12 under 760px), gap 20, max width 1480 centered, nav rail 76px at rest (`--rail-w`), 232px expanded (`--nav-w`, D45).
 - Shadows: glass and cards as in the table; overlays also carry `--shadow-overlay`.
-- Motion: card hover lift, route fade, hover and press transitions ≤ 180ms; nothing else animates.
+- Motion: card hover lift, route fade (180ms, 4px rise), hover and press transitions ≤ 120ms. Layout transitions are 150-220ms: rail width 200ms open (`cubic-bezier(.2,.8,.2,1)`) and 180ms ease-in close, with labels fading in over 120ms after an 80ms delay and out at once; brain panel width 220ms with the content fading and `inert` plus `visibility:hidden` once closed (phone: 200ms slide); command dialog overlay 150ms, panel 160ms fade, scale .98 to 1 and 4px settle (Radix `data-state` keyframes). Search field and top-bar buttons ease fill and border in 120ms, with the accent ring on focus-visible. The terminal dock does not animate (xterm fit). Every transition and animation is off under `prefers-reduced-motion: reduce`.
 
 ## Shell
 
@@ -139,7 +139,7 @@ One family: `--font-ui` system stack (no network fonts). Numbers use `tabular-nu
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
-Under 760px the nav is a drawer (menu button in the top bar, scrim, Escape closes) and the brain tree is an overlay inside the main panel. The top bar has the sidebar toggle (Ctrl+\), the search field (opens the command dialog, Ctrl+K), the terminal button and the identity chip (initials `BL` on a darkened `#2f7399 → #6a49c4` gradient so white text passes, "Ben Lawton", brain label). The connectors card at the bottom of the nav reads "n of 3 connected" from the three feeds and links to Settings.
+Under 760px the nav is a drawer (menu button in the top bar, scrim, Escape closes) and the brain tree is an overlay inside the main panel. The top bar has the sidebar toggle (Ctrl+\), the search field (opens the command dialog, Ctrl+K), the terminal button and the identity chip (initials `BL` on a darkened `#2f7399 → #6a49c4` gradient so white text passes, "Ben Lawton", brain label). On desktop the nav is a 76px glass rail at rest (D45): brand tile, each item as a 44px icon target, the current item highlighted, a hairline in place of each group eyebrow, and the connectors card as a 44px plug tile with a 3-segment meter. It floats open to 232px over the content (the layout always reserves 76px, so nothing reflows) after 90ms of hover or on keyboard focus, and closes 220ms after the pointer leaves; Escape collapses it. On touch without hover, tapping the brand tile toggles it, a tap outside or on an item closes it. Expanded, the connectors card stacks "Connectors" over "n of 3 connected" (both from the three feeds), then the meter, and links to Settings.
 
 ## Home
 

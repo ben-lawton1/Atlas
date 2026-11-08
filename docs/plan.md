@@ -86,3 +86,14 @@ Spec: `docs/glass-spec.md`. Decisions D43, D44.
 Checks 2026-11-08 (Docker): web unit 74 passed, api unit 111 passed, `npm run build` ok, e2e 33/33. Main chunk 129.5 kB gzip before, 227.5 kB after (+98 kB, under the 150 kB limit); Recharts is a separate lazy chunk (94.4 kB gzip). Not pushed.
 
 Next: connectors (calendar, portfolio, mail, Slack), Tasks storage, Notes redesign.
+
+## Round 7 (2026-11-08): hover rail, transitions, connectors card, branch `feat/glass-home`
+
+Spec: `docs/round7-spec.md`. Decision D45.
+
+| # | Slice | Status |
+|---|---|---|
+| 28 | A: connectors card stacked, collapsed hover rail (`useRailExpand`), brain panel and command dialog transitions, top-bar hover states, e2e and screenshots (`rail-{collapsed,expanded}-{light,dark}`) | done |
+| 29 | B: no caret on non-editable text | see builder B |
+
+Checks 2026-11-08 (Docker, project `atlas-test-a`): web unit 81 passed, `npm run build` ok (inside the e2e image build), e2e 40/40.
