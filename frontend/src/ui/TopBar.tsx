@@ -31,7 +31,7 @@ export function TopBar(props: {
       </button>
       <CommandBox sections={props.sections} />
       <TerminalButton />
-      <div className="flex items-center gap-2.5 rounded-pill border border-card-edge bg-row py-1 pl-1 pr-3.5" data-testid="identity">
+      <div className="topbar-chip flex items-center gap-2.5 rounded-pill border border-card-edge bg-row py-1 pl-1 pr-3.5" data-testid="identity">
         <span
           aria-hidden="true"
           className="flex size-9 flex-none items-center justify-center rounded-full bg-[linear-gradient(135deg,#2f7399,#6a49c4)] text-[0.8125rem] font-bold text-white"

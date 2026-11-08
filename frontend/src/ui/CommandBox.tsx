@@ -38,7 +38,7 @@ export function CommandBox({ sections }: { sections: AtlasNode[] | null }) {
         type="button"
         data-testid="command-trigger"
         onClick={() => setOpen(true)}
-        className="flex min-h-11 min-w-0 flex-1 basis-0 items-center gap-2.5 rounded-2xl border border-card-edge bg-row px-4 text-left text-[0.875rem] text-label-secondary hover:bg-hover"
+        className="cmd-trigger flex min-h-11 min-w-0 flex-1 basis-0 items-center gap-2.5 rounded-2xl border border-card-edge bg-row px-4 text-left text-[0.875rem] text-label-secondary"
       >
         <Search aria-hidden="true" size={18} strokeWidth={1.8} className="flex-none" />
         <span className="min-w-0 flex-1 truncate">Search brain, views…</span>

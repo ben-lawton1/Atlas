@@ -10,10 +10,10 @@ export function CommandDialog(props: { open: boolean; onOpenChange: (open: boole
   return (
     <Dialog.Root open={props.open} onOpenChange={props.onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(8,10,20,0.45)]" />
+        <Dialog.Overlay className="cmd-overlay fixed inset-0 z-40 bg-[rgba(8,10,20,0.45)]" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-[14vh] z-50 w-[min(640px,calc(100vw-24px))] -translate-x-1/2 outline-none"
+          className="cmd-content fixed left-1/2 top-[14vh] z-50 w-[min(640px,calc(100vw-24px))] -translate-x-1/2 outline-none"
         >
           <Dialog.Title className="absolute size-px overflow-hidden [clip:rect(0_0_0_0)]">{props.title}</Dialog.Title>
           <GlassPanel variant="overlay" className="overflow-hidden">

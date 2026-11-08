@@ -390,3 +390,118 @@ test('phone width: the views do not scroll sideways', async ({ page }) => {
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
 });
+
+// ---------- round 7 (D45): hover rail, connectors card, transitions ----------
+const box = async (l: import('@playwright/test').Locator) => {
+  const b = await l.boundingBox();
+  if (!b) throw new Error('no box');
+  return b;
+};
+
+test.describe('hover rail', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('collapsed at rest, expands on hover after the delay, collapses on leave; main does not move', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    const main = page.locator('main.main');
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-current', 'page');
+    expect((await box(rail)).width).toBeLessThanOrEqual(80);
+    const before = await box(main);
+    await page.getByTestId('rail-calendar').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await expect(page.getByTestId('rail-calendar').locator('.rail-label')).toHaveCSS('opacity', '1');
+    await expect(page.getByTestId('rail-calendar')).toBeVisible();
+    const during = await box(main);
+    expect(during.x).toBe(before.x);
+    expect(during.width).toBe(before.width);
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+    await expect(page.getByTestId('rail-calendar').locator('.rail-label')).toHaveCSS('opacity', '0');
+    expect(await box(main)).toEqual(before);
+    // the current item stays highlighted while collapsed
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-label', 'Home');
+  });
+
+  test('a graze shorter than the hover delay does not open it; Escape collapses', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.mouse.move(400, 300);
+    await page.mouse.move(30, 300);
+    await page.mouse.move(400, 300);
+    await page.waitForTimeout(400);
+    expect((await box(rail)).width).toBeLessThanOrEqual(80);
+    await page.getByTestId('rail-home').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+  });
+
+  test('keyboard: Tab into the rail expands it', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.locator('body').click({ position: { x: 600, y: 5 } });
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('rail-brand')).toBeFocused();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+  });
+
+  test('clicks work on collapsed icons and the rail closes after navigating', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('rail-tasks').click();
+    await expect(page).toHaveURL(/\/tasks$/);
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(page.getByTestId('rail'))).width).toBeLessThanOrEqual(80);
+  });
+
+  test('connectors card: the status sits on its own line inside the card; screenshots', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.screenshot({ path: '/e2e/artifacts/rail-collapsed-light.png', animations: 'disabled' });
+    await page.getByTestId('rail-home').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await expect(page.getByTestId('connectors-count')).toHaveCSS('opacity', '1');
+    await page.waitForTimeout(350);
+    const card = await box(page.getByTestId('connectors-card'));
+    const label = await box(page.getByTestId('connectors-card').getByText('Connectors', { exact: true }));
+    const count = await box(page.getByTestId('connectors-count'));
+    expect(count.y).toBeGreaterThan(label.y + label.height - 1);
+    for (const b of [label, count]) {
+      expect(b.x).toBeGreaterThanOrEqual(card.x);
+      expect(b.y).toBeGreaterThanOrEqual(card.y);
+      expect(b.x + b.width).toBeLessThanOrEqual(card.x + card.width);
+      expect(b.y + b.height).toBeLessThanOrEqual(card.y + card.height);
+    }
+    await page.screenshot({ path: '/e2e/artifacts/rail-expanded-light.png', animations: 'disabled' });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.screenshot({ path: '/e2e/artifacts/rail-expanded-dark.png', animations: 'disabled' });
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+    await page.screenshot({ path: '/e2e/artifacts/rail-collapsed-dark.png', animations: 'disabled' });
+  });
+});
+
+test('the brain tree panel animates and ends up inert and hidden when closed', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  const sidebar = page.getByTestId('sidebar');
+  await expect(sidebar).toBeVisible();
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toHaveAttribute('data-open', 'false');
+  await expect(sidebar).toBeHidden();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).not.toHaveAttribute('inert', '');
+  await expect.poll(async () => (await box(sidebar)).width).toBe(280);
+});
+
+test('command dialog opens and closes with its exit animation', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('command-trigger').click();
+  await expect(page.getByTestId('command-box')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('command-box')).toHaveCount(0);
+});
