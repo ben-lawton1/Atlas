@@ -15,56 +15,77 @@ function generatedTime(iso: string | null): string {
   return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-export function BriefingPanel() {
+function todayLabel(d: Date): string {
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+/** Home's lead: the date, then the briefing Atlas wrote ("Atlas speaks first"). */
+export function TodayHeader() {
   const feed = useAsync(() => api.briefing(), 'briefing');
   const data = feed.status === 'ok' ? feed.data : null;
   const connected = !!data?.connected;
+  const updated = connected ? generatedTime(data!.generatedAt) : '';
   return (
-    <section className="db-card" data-testid="briefing-panel" aria-label="Daily briefing">
-      <div className="db-head">
-        <div className="db-title">
-          <h2>Daily briefing</h2>
-        </div>
-        {connected && data!.generatedAt && <span className="db-sub">{generatedTime(data!.generatedAt)}</span>}
-      </div>
-      {feed.status === 'loading' && <p className="db-notice" role="status">Loading briefing…</p>}
+    <header className="today" data-testid="briefing-panel" aria-label="Daily briefing">
+      <p className="today-eyebrow">
+        <span data-testid="home-date">{todayLabel(new Date())}</span>
+        {updated && <span> · Updated {updated}</span>}
+      </p>
+      {feed.status === 'loading' && (
+        <>
+          <p className="db-sr" role="status">Loading briefing…</p>
+          <div className="db-skel-stack" aria-hidden="true">
+            <span className="db-skel" style={{ width: 'min(60ch, 90%)', height: '1.5rem' }} />
+            <span className="db-skel" style={{ width: 'min(40ch, 60%)', height: '1.5rem' }} />
+          </div>
+        </>
+      )}
       {feed.status === 'error' && (
-        <p className="db-notice error" role="alert">Could not load the briefing: {feed.message}</p>
+        <p className="db-error" role="alert">Couldn't load the briefing: {feed.message}</p>
       )}
       {feed.status === 'ok' && !connected && (
-        <p className="db-notice">No briefing yet. Atlas will write one each morning once calendar and mail are connected.</p>
+        <>
+          <p className="today-lead muted-lead">No briefing yet.</p>
+          <p className="today-note">Atlas writes one each morning once calendar and mail are connected.</p>
+        </>
       )}
       {connected && (
         <>
-          {data!.summary && <p className="db-brief-summary">{data!.summary}</p>}
-          {data!.upNext.length > 0 && (
-            <div className="db-list-wrap">
-              <h3 className="db-section-label">Up next</h3>
-              <ul className="db-list">
-                {data!.upNext.map((it) => (
-                  <li key={it.id} className="db-row">
-                    <span className="db-row-time">{it.time ?? '—'}</span>
-                    <div className="db-row-text">
-                      <span className="db-row-title">{it.title}</span>
-                      <span className="db-row-meta">{upNextMeta(it)}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {data!.suggestions.length > 0 && (
-            <div className="db-list-wrap">
-              <h3 className="db-section-label">Suggestions</h3>
-              <ul className="db-list">
-                {data!.suggestions.map((s) => (
-                  <li key={s.id} className="db-row db-sugg">{s.text}</li>
-                ))}
-              </ul>
+          {data!.summary && <p className="today-lead">{data!.summary}</p>}
+          {(data!.upNext.length > 0 || data!.suggestions.length > 0) && (
+            <div className="today-cols">
+              {data!.upNext.length > 0 && (
+                <div>
+                  <h3 className="db-label">Up next</h3>
+                  <ul className="today-list">
+                    {data!.upNext.map((it) => (
+                      <li key={it.id} className="today-row">
+                        <span className="today-time">{it.time ?? '—'}</span>
+                        <span className="today-text">
+                          <span className="today-title">{it.title}</span>
+                          <span className="today-meta">{upNextMeta(it)}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {data!.suggestions.length > 0 && (
+                <div>
+                  <h3 className="db-label">Suggestions</h3>
+                  <ul className="today-list">
+                    {data!.suggestions.map((s) => (
+                      <li key={s.id} className="today-row">
+                        <span className="today-title">{s.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </>
       )}
-    </section>
+    </header>
   );
 }

@@ -1,0 +1,18 @@
+/* Home layout (docs/design.md › Home). Section/group primitives live in dashboards.css. */
+.home { box-sizing: border-box; width: 100%; max-width: 1200px; margin: 0 auto; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); }
+.home-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+
+.recent-list { list-style: none; margin: 0; padding: 0; }
+.recent-list li { position: relative; }
+.recent-list li + li::before { content: ""; position: absolute; top: 0; left: var(--space-4); right: 0; border-top: 1px solid var(--separator); }
+.recent-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 44px; padding: var(--space-2) var(--space-4); color: var(--label); text-decoration: none; transition: background-color 100ms; }
+.recent-row:hover { background: var(--surface-hover); text-decoration: none; }
+.recent-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.recent-text { display: flex; flex-direction: column; min-width: 0; }
+.recent-name { font: var(--text-body) var(--font-ui); color: var(--label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-dir { font: var(--text-caption) var(--font-ui); color: var(--label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-when { font: var(--text-caption) var(--font-ui); color: var(--label-tertiary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 900px) { .home-row { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .home { padding: var(--space-4); } }
+@media (prefers-reduced-motion: reduce) { .recent-row { transition: none; } }

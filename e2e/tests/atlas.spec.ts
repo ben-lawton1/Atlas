@@ -16,17 +16,78 @@ test('home shows the dashboard panels and the recent-files card (no notes card)'
   await expect(page.getByTestId('calendar-status')).toContainText('No calendar connected yet');
   await expect(page.getByTestId('portfolio-panel')).toBeVisible();
   await expect(page.getByTestId('portfolio-status')).toContainText('Not connected');
+  await expect(page.getByTestId('portfolio-panel')).not.toContainText('—');
   await expect(page.getByTestId('briefing-panel')).toBeVisible();
   await expect(page.getByTestId('briefing-panel')).toContainText('No briefing yet');
   const atlasCard = page.getByTestId('card-recent-atlas');
-  await expect(atlasCard.getByRole('heading', { name: 'Recently changed in Atlas' })).toBeVisible();
+  await expect(atlasCard.getByRole('heading', { name: 'Recently changed', exact: true })).toBeVisible();
   await expect(atlasCard.locator('a').first()).toBeVisible();
+  await expect(atlasCard.locator('a').first()).toHaveAttribute('href', /^\/atlas\//);
   // Chalk notes were removed (D41)
   await expect(page.getByTestId('card-recent-notes')).toHaveCount(0);
   // forbidden files never show up as recent
   await expect(atlasCard).not.toContainText('.env');
   await expect(atlasCard).not.toContainText('sqlite');
   await expect(atlasCard).not.toContainText('raw/');
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.screenshot({ path: '/e2e/artifacts/home-empty-light.png', animations: 'disabled' });
+});
+
+test('home renders connected dashboards', async ({ page }) => {
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const day = (n: number) => iso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + n));
+  const item = (o: Record<string, unknown>) => ({
+    durationMin: null, time: null, tag: null, done: null, subtasks: [], source: 'google', location: null, ...o,
+  });
+  const today = iso(now);
+  const upNext = item({ id: 'ev1', title: 'Standup with HyperSense', date: today, time: '09:00', durationMin: 15, kind: 'event', tag: 'Work', location: 'Zoom' });
+  const items = [
+    item({ id: 't1', title: 'Finish DSA problem set', date: day(0), kind: 'task', tag: 'School', done: true }),
+    item({ id: 't2', title: 'Ship Atlas redesign', date: day(2), kind: 'task', tag: 'Build', done: false, subtasks: [{ title: 'Home', done: true }, { title: 'Dashboards', done: false }] }),
+    item({ id: 't3', title: 'Gym', date: day(3), time: '17:30', durationMin: 60, kind: 'event', tag: 'Health' }),
+    item({ id: 't4', title: 'Pay rent', date: day(4), kind: 'task', tag: 'Money', done: false }),
+    upNext,
+  ];
+  const history = Array.from({ length: 24 }, (_, i) => ({
+    t: new Date(now.getTime() - (23 - i) * 86_400_000).toISOString(),
+    value: 11_800 + i * 24 + (i % 3) * 35,
+  }));
+  const hold = (symbol: string, name: string, shares: number, price: number, dayChangePct: number) => ({
+    symbol, name, shares, price, dayChangePct, value: Math.round(shares * price * 100) / 100,
+    spark: Array.from({ length: 12 }, (_, i) => price * (1 + (dayChangePct / 100) * (i / 11) + (i % 2) * 0.004)),
+  });
+  const json = (body: unknown) => ({ contentType: 'application/json', body: JSON.stringify(body) });
+  await page.route('**/api/briefing', (r) => r.fulfill(json({
+    connected: true, generatedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 2).toISOString(),
+    summary: 'Two meetings today and one task due Friday; the morning is free for the redesign.',
+    upNext: [upNext, item({ id: 'ev2', title: 'Office hours', date: day(3), time: '14:00', durationMin: 30, kind: 'event', tag: 'School' })],
+    suggestions: [{ id: 's1', text: 'Block 90 minutes for the Dashboards subtask.' }, { id: 's2', text: 'Reply to the recruiter email before noon.' }],
+  })));
+  await page.route('**/api/calendar*', (r) => r.fulfill(json({ connected: true, sources: ['google'], start: day(0), days: 7, items })));
+  await page.route('**/api/portfolio*', (r) => r.fulfill(json({
+    connected: true, sources: ['broker'], asOf: now.toISOString(), currency: 'USD', range: '1M',
+    total: 12_340, dayChange: { amount: 40.5, pct: 0.33 }, totalChange: { amount: -120, pct: -0.96 }, history,
+    holdings: [hold('VTI', 'Vanguard Total Market', 20, 280, 0.4), hold('VXUS', 'Vanguard Intl', 40, 66, -0.2), hold('BND', 'Vanguard Bond', 30, 72, 0), hold('NVDA', 'NVIDIA', 5, 140, 1.2), hold('AAPL', 'Apple', 8, 230, -0.5)],
+  })));
+
+  await page.setViewportSize({ width: 1440, height: 1500 });
+  await page.goto('/');
+  await expect(page.getByText('Two meetings today and one task due Friday')).toBeVisible();
+  await expect(page.getByTestId('briefing-panel').getByText('Standup with HyperSense')).toBeVisible();
+  await expect(page.getByTestId('calendar-day').and(page.locator('[aria-current="date"]')).getByText('Today', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('portfolio-panel')).toContainText('$12,340.00');
+  await expect(page.getByTestId('week-calendar')).toContainText('1 of 3 done');
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.screenshot({ path: '/e2e/artifacts/home-light.png', animations: 'disabled' });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.screenshot({ path: '/e2e/artifacts/home-dark.png', animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload(); // phone width starts with the sidebar closed
+  await expect(page.getByTestId('portfolio-panel')).toContainText('$12,340.00');
+  await page.screenshot({ path: '/e2e/artifacts/home-phone-dark.png', animations: 'disabled' });
 });
 
 test('rail navigates to calendar and portfolio; deep links survive a refresh', async ({ page }) => {

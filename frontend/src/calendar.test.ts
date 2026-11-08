@@ -35,9 +35,9 @@ describe('dates', () => {
 
 describe('tagColor', () => {
   it('maps known tags and falls back', () => {
-    expect(tagColor('Build')).toBe('#3fb984');
-    expect(tagColor('Nope')).toBe('#9aa1ac');
-    expect(tagColor(null)).toBe('#9aa1ac');
+    expect(tagColor('Build')).toBe('var(--cat-3)');
+    expect(tagColor('Nope')).toBe('var(--cat-6)');
+    expect(tagColor(null)).toBe('var(--cat-6)');
   });
 });
 
@@ -49,7 +49,7 @@ describe('buildDays', () => {
     const days = buildDays(start, 7, [], today);
     expect(days).toHaveLength(7);
     expect(days.map((d) => d.dow)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-    expect(days[0].dayNum).toBe('02');
+    expect(days[0].dayNum).toBe('2');
     expect(days[0].iso).toBe('2026-11-02');
     expect(days.filter((d) => d.isToday).map((d) => d.iso)).toEqual(['2026-11-04']);
     expect(days[0]).toMatchObject({ load: 'free', pct: 0, items: [] });
@@ -75,7 +75,7 @@ describe('buildDays', () => {
     ], today);
     const [a, b] = days[0].items;
     expect(a.meta).toBe('Build · 08:00 · 1/2');
-    expect(a).toMatchObject({ color: '#3fb984', isTask: true, done: true });
+    expect(a).toMatchObject({ color: 'var(--cat-3)', isTask: true, done: true });
     expect(b).toMatchObject({ meta: '', isTask: false, done: false });
   });
 

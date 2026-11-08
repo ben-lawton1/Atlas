@@ -5,9 +5,7 @@ import type { Change, Range } from '../../portfolio';
 import { useAsync } from '../../state';
 import './dashboards.css';
 
-const SWATCHES = ['#3fb984', '#5fd3a0', '#8fb3e8', '#c3a6f0', '#f2a541', '#e6e8eb', '#6b727d'];
-const swatch = (i: number) => SWATCHES[i % SWATCHES.length];
-const SPARK_COLOR = { up: '#5fd3a0', down: '#ff6b6b', flat: '#9aa1ac' } as const;
+const swatch = (i: number) => `var(--cat-${(i % 6) + 1})`;
 
 function ChangeLine({ c, currency, label }: { c: Change; currency: string; label: string }) {
   const f = formatChange(c, currency);
@@ -30,23 +28,13 @@ export function PortfolioPanel({ compact }: { compact?: boolean }) {
   const holdings = data ? withWeights(data.holdings) : [];
   const values = data ? data.history.map((p) => p.value) : [];
   const legend = compact ? holdings.slice(0, 5) : holdings;
+  const trend = values.length > 0 && values[values.length - 1] >= values[0] ? 'up' : 'down';
 
   return (
-    <section className={'db-card' + (compact ? ' db-compact' : '')} data-testid="portfolio-panel" aria-label="Portfolio">
-      <div className="db-top">
-        <div className="db-stack">
-          <div className="db-title">
-            <h2>Portfolio</h2>
-          </div>
-          <span className="db-value">{connected && data!.total !== null ? formatMoney(data!.total, cur) : '—'}</span>
-          {connected ? (
-            <div className="db-changes">
-              {data!.dayChange && <ChangeLine c={data!.dayChange} currency={cur} label="today" />}
-              {data!.totalChange && <ChangeLine c={data!.totalChange} currency={cur} label="all time" />}
-            </div>
-          ) : (
-            feed.status === 'ok' && <span className="db-sub" data-testid="portfolio-status">Not connected</span>
-          )}
+    <section className={'db-section' + (compact ? ' db-compact' : '')} data-testid="portfolio-panel" aria-label="Portfolio">
+      <div className="db-section-head">
+        <div className="db-title">
+          <h2>Portfolio</h2>
         </div>
         {connected && (
           <div className="db-range" role="group" aria-label="Chart range">
@@ -58,55 +46,72 @@ export function PortfolioPanel({ compact }: { compact?: boolean }) {
       </div>
 
       {feed.status === 'loading' && (
-        <p className="db-notice" data-testid="portfolio-status" role="status">Loading portfolio…</p>
+        <>
+          <p className="db-sr" data-testid="portfolio-status" role="status">Loading portfolio…</p>
+          <div className="db-skel-stack" aria-hidden="true">
+            <span className="db-skel" style={{ width: '40%', height: '1.875rem' }} />
+            <span className="db-skel" style={{ width: '60%', height: '1.125rem' }} />
+            <span className="db-skel" style={{ width: '100%', height: '8rem' }} />
+          </div>
+        </>
       )}
       {feed.status === 'error' && (
-        <p className="db-notice error" data-testid="portfolio-status" role="alert">Could not load the portfolio: {feed.message}</p>
+        <p className="db-error" data-testid="portfolio-status" role="alert">Couldn't load the portfolio: {feed.message}</p>
       )}
       {feed.status === 'ok' && !connected && (
-        <p className="db-notice">No brokerage connected yet. Holdings will sync here through a connector.</p>
+        <p className="db-note" data-testid="portfolio-status">Not connected. Holdings will sync here through a connector.</p>
       )}
 
-      {connected && values.length > 0 && (
-        <svg
-          className="db-chart"
-          viewBox="0 0 600 180"
-          preserveAspectRatio="none"
-          role="img"
-          aria-label={`Portfolio value over ${range}, from ${formatMoney(values[0], cur)} to ${formatMoney(values[values.length - 1], cur)}`}
-        >
-          {[45, 90, 135].map((y) => (
-            <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#30353d" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          ))}
-          <polygon points={areaPoints(values, 600, 180, 8)} fill="#3fb984" fillOpacity="0.12" />
-          <polyline points={linePoints(values, 600, 180, 8)} fill="none" stroke="#3fb984" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
-        </svg>
-      )}
+      {connected && (
+        <div className="db-group db-pad">
+          <span className="db-value">{data!.total !== null ? formatMoney(data!.total, cur) : '—'}</span>
+          <div className="db-changes">
+            {data!.dayChange && <ChangeLine c={data!.dayChange} currency={cur} label="today" />}
+            {data!.totalChange && <ChangeLine c={data!.totalChange} currency={cur} label="all time" />}
+          </div>
 
-      {connected && holdings.length > 0 && (
-        <div className="db-alloc">
-          <div className="db-alloc-head">
-            <span>Allocation</span>
-            <span className="db-sub">{holdings.length} {holdings.length === 1 ? 'position' : 'positions'}</span>
-          </div>
-          <div className="db-alloc-bar" aria-hidden="true">
-            {holdings.map((h, i) => (
-              <div key={h.symbol} style={{ width: `${h.weight}%`, background: swatch(i) }} />
-            ))}
-          </div>
-          <ul className="db-legend">
-            {legend.map((h, i) => (
-              <li key={h.symbol}>
-                <span className="db-dot" style={{ background: swatch(i) }} aria-hidden="true" />
-                {h.symbol} <b>{formatPct(h.weight)}</b>
-              </li>
-            ))}
-          </ul>
+          {values.length > 0 && (
+            <svg
+              className="db-chart"
+              viewBox="0 0 600 180"
+              preserveAspectRatio="none"
+              role="img"
+              aria-label={`Portfolio value over ${range}, from ${formatMoney(values[0], cur)} to ${formatMoney(values[values.length - 1], cur)}`}
+            >
+              {[45, 90, 135].map((y) => (
+                <line key={y} className="db-grid-line" x1="0" y1={y} x2="600" y2={y} vectorEffect="non-scaling-stroke" />
+              ))}
+              <polygon className={'db-area ' + trend} points={areaPoints(values, 600, 180, 8)} />
+              <polyline className={'db-line ' + trend} points={linePoints(values, 600, 180, 8)} vectorEffect="non-scaling-stroke" />
+            </svg>
+          )}
+
+          {holdings.length > 0 && (
+            <div className="db-alloc">
+              <div className="db-alloc-head">
+                <span className="db-label">Allocation</span>
+                <span className="db-sub">{holdings.length} {holdings.length === 1 ? 'position' : 'positions'}</span>
+              </div>
+              <div className="db-alloc-bar" aria-hidden="true">
+                {holdings.map((h, i) => (
+                  <div key={h.symbol} style={{ width: `${h.weight}%`, background: swatch(i) }} />
+                ))}
+              </div>
+              <ul className="db-legend">
+                {legend.map((h, i) => (
+                  <li key={h.symbol}>
+                    <span className="db-dot" style={{ background: swatch(i) }} aria-hidden="true" />
+                    {h.symbol} <b>{formatPct(h.weight)}</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
       {connected && !compact && holdings.length > 0 && (
-        <div className="db-table-box">
+        <div className="db-group db-table-box">
           <table className="db-table">
             <thead>
               <tr>
@@ -139,7 +144,7 @@ export function PortfolioPanel({ compact }: { compact?: boolean }) {
                     <td className="mid">
                       {h.spark.length > 0 && (
                         <svg width="72" height="20" viewBox="0 0 80 24" aria-hidden="true">
-                          <polyline points={linePoints(h.spark, 80, 24, 2)} fill="none" stroke={SPARK_COLOR[dir]} strokeWidth="1.5" strokeLinejoin="round" />
+                          <polyline className={'db-spark ' + dir} points={linePoints(h.spark, 80, 24, 2)} />
                         </svg>
                       )}
                     </td>
