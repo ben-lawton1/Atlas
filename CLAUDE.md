@@ -2,6 +2,8 @@
 
 Front end for Ben's AI operating system Atlas. The brain itself lives in `/home/ben/Atlas/aios`; this repo only reads it. Decisions: `docs/decisions.md`. Plan and status: `docs/plan.md`.
 
+**Design baseline:** `docs/design.md` (D42), grounded in the `/apple-design` skill. Read it before any UI change and use only its tokens.
+
 ## Stack and layout
 
 - `backend/` FastAPI (Python 3.14): `app/guard.py` (D7), `app/brain.py` (tree, file, recent), `app/main.py` (routes, SPA fallback). Tests in `backend/tests/`, fixture brain in `backend/tests/fixtures/aios/`.
@@ -9,7 +11,7 @@ Front end for Ben's AI operating system Atlas. The brain itself lives in `/home/
 - `backend/app/dashboards.py` serves `/api/calendar`, `/api/portfolio`, `/api/briefing` (D37). Connectors plug in as sources (`CalendarSource`, `PortfolioSource`, `BriefingSource`) via `create_app(dashboard_sources=...)`; the response shapes are a contract with the frontend types, so change both together.
 - `bridge/` Go terminal bridge `atlas-terminal` (runs on Windows, never in Docker for real use). Built and tested only via `compose.tools.yaml` (project `atlas-tools`); output in `bridge/dist/` (git-ignored).
 - `e2e/` Playwright (runs in Docker).
-- Mirrors Chalk (`/home/ben/Atlas/code/Chalk`) for Docker, compose, theme and the sidebar/terminal code. Chalk is no longer embedded (D41); `chalk-embed-v1` is the tag to return to. Never edit Chalk from here.
+- Mirrors Chalk (`/home/ben/Atlas/code/Chalk`) for Docker, compose and the sidebar/terminal code; the theme no longer mirrors Chalk (D42). Chalk is no longer embedded (D41); `chalk-embed-v1` is the tag to return to. Never edit Chalk from here.
 
 ## Rules
 
