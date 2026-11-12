@@ -20,7 +20,7 @@ export function FilePreview({ path }: { path: string }) {
   }
 
   return (
-    <div className="pane-scroll">
+    <div>
       <header className="pane-head">
         <nav className="crumbs" aria-label="Path" data-testid="preview-path">
           {crumbs.map((c, i) => (

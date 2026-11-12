@@ -6,4 +6,3 @@ docs
 .env
 frontend/dist
 bridge
-stub

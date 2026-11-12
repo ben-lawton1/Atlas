@@ -14,14 +14,14 @@ export type CalendarItem = {
 };
 export type CalendarFeed = { connected: boolean; sources: string[]; start: string; days: number; items: CalendarItem[] };
 
-const FALLBACK_COLOR = '#9aa1ac';
+const FALLBACK_COLOR = 'var(--cat-6)';
 export const TAG_COLORS: Record<string, string> = {
-  School: '#8fb3e8',
-  Work: '#f2a541',
-  Build: '#3fb984',
-  Health: '#c3a6f0',
-  Money: '#5fd3a0',
-  Life: '#9aa1ac',
+  School: 'var(--cat-1)',
+  Work: 'var(--cat-2)',
+  Build: 'var(--cat-3)',
+  Health: 'var(--cat-4)',
+  Money: 'var(--cat-5)',
+  Life: 'var(--cat-6)',
 };
 
 export function tagColor(tag: string | null): string {
@@ -107,7 +107,7 @@ export function buildDays(start: Date, count: number, items: CalendarItem[], tod
     days.push({
       iso,
       dow: d.toLocaleDateString('en-US', { weekday: 'short' }),
-      dayNum: pad2(d.getDate()),
+      dayNum: String(d.getDate()),
       isToday: iso === todayIso,
       items: ordered.map(itemView),
       load,

@@ -4,8 +4,16 @@ export type Route =
   | { name: 'home' }
   | { name: 'calendar' }
   | { name: 'portfolio' }
-  | { name: 'atlas'; path: string | null }
-  | { name: 'notes'; boardId: string | null };
+  | { name: 'tasks' }
+  | { name: 'notes' }
+  | { name: 'projects' }
+  | { name: 'messages' }
+  | { name: 'people' }
+  | { name: 'settings' }
+  | { name: 'atlas'; path: string | null };
+
+/** Routes with no extra path: the main views and the tab frames (D44). */
+export const FRAME_ROUTES = ['calendar', 'portfolio', 'tasks', 'notes', 'projects', 'messages', 'people', 'settings'] as const;
 
 function decode(seg: string): string {
   try {
@@ -18,22 +26,17 @@ function decode(seg: string): string {
 export function parseRoute(pathname: string): Route {
   const segs = pathname.split('/').filter((s) => s !== '').map(decode);
   if (segs[0] === 'atlas') return { name: 'atlas', path: segs.length > 1 ? segs.slice(1).join('/') : null };
-  if (segs[0] === 'calendar') return { name: 'calendar' };
-  if (segs[0] === 'portfolio') return { name: 'portfolio' };
-  if (segs[0] === 'notes') return { name: 'notes', boardId: segs[1] ?? null };
+  if (segs[0] && (FRAME_ROUTES as readonly string[]).includes(segs[0])) return { name: segs[0] } as Route;
   return { name: 'home' };
 }
 
 const enc = (s: string) => s.split('/').map(encodeURIComponent).join('/');
 
 export const atlasHref = (path: string, hash = '') => `/atlas/${enc(path)}${hash}`;
-export const notesHref = (boardId: string) => `/notes/${encodeURIComponent(boardId)}`;
 
 export function routeHref(route: Route): string {
   if (route.name === 'atlas') return route.path ? atlasHref(route.path) : '/atlas';
-  if (route.name === 'notes') return route.boardId ? notesHref(route.boardId) : '/notes';
-  if (route.name === 'calendar') return '/calendar';
-  if (route.name === 'portfolio') return '/portfolio';
+  if (route.name !== 'home') return `/${route.name}`;
   return '/';
 }
 

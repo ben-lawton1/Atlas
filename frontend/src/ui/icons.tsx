@@ -1,14 +1,11 @@
 // Inline SVG icon set (24x24, stroke based, currentColor). Paths copied from Chalk's icons (D23); folder and file are Atlas's own.
 export type IconName =
-  | 'chevron' | 'notebook' | 'plus' | 'more' | 'pencil' | 'trash' | 'terminal' | 'minimise' | 'chevronDown' | 'close'
+  | 'chevron' | 'plus' | 'trash' | 'terminal' | 'minimise' | 'chevronDown' | 'close'
   | 'folder' | 'file' | 'claude' | 'home' | 'calendar' | 'trend' | 'brain' | 'search' | 'chevronLeft' | 'sidebar';
 
 const PATHS: Record<IconName, string> = {
   chevron: 'M9 6l6 6-6 6',
-  notebook: 'M7 4h10.5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H7z M7 4v16 M4.5 8H7 M4.5 12H7 M4.5 16H7',
   plus: 'M12 5v14 M5 12h14',
-  more: 'M4 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0 M11 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0 M18 12a1 1 0 1 0 2 0a1 1 0 1 0-2 0',
-  pencil: 'M4 20l1-4L16 5l3 3L8 19z M14 7l3 3',
   trash: 'M4 7h16 M10 11v6 M14 11v6 M6 7l1 13h10l1-13 M9 7V4h6v3',
   terminal: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z M7 10l3 2.5L7 15 M12.5 15H17',
   minimise: 'M6 10l6 6 6-6',

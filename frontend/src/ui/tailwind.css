@@ -1,0 +1,54 @@
+/* Tailwind v4 without preflight (D43): our own reset lives in styles.css. Utilities only use the token names below, never raw hex. */
+@layer base, theme, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --font-sans: var(--font-ui);
+  --color-label: var(--label);
+  --color-label-strong: var(--label-strong);
+  --color-label-secondary: var(--label-secondary);
+  --color-label-tertiary: var(--label-tertiary);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-glass: var(--glass-fill);
+  --color-main: var(--main-fill);
+  --color-card: var(--card-fill);
+  --color-row: var(--row-fill);
+  --color-tile: var(--tile-fill);
+  --color-line: var(--separator);
+  --color-line-strong: var(--separator-strong);
+  --color-hover: var(--surface-hover);
+  --color-selected: var(--surface-selected);
+  --color-today: var(--today-fill);
+  --color-nav-active: var(--nav-active);
+  --color-on-today: var(--on-today);
+  --color-glass-edge: var(--glass-border);
+  --color-main-edge: var(--main-border);
+  --color-card-edge: var(--card-border);
+  --color-cat-1: var(--cat-1);
+  --color-cat-2: var(--cat-2);
+  --color-cat-3: var(--cat-3);
+  --color-cat-4: var(--cat-4);
+  --color-cat-5: var(--cat-5);
+  --color-cat-6: var(--cat-6);
+  --radius-card: 24px;
+  --radius-tile: 22px;
+  --radius-row: 14px;
+  --radius-pill: 22px;
+  --radius-nav: 28px;
+  --radius-bar: 24px;
+  --radius-main: 30px;
+  --shadow-glass: var(--glass-shadow);
+  --shadow-main: var(--main-shadow);
+  --shadow-card: var(--card-shadow);
+}
+
+/* No blinking text caret on non-editable text (Chromium/Edge caret browsing, F7). Editable fields and the terminal keep theirs. */
+@layer base {
+  html { caret-color: transparent; }
+  input, textarea, select, [contenteditable]:not([contenteditable="false"]), .xterm, .xterm * { caret-color: auto; }
+}

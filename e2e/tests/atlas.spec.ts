@@ -6,29 +6,126 @@ async function openAbout(page: Page) {
   await page.locator('[data-testid="atlas-file"][data-path="entities/personal/about.md"]').click();
 }
 
-test('home shows the dashboard panels and both recent cards', async ({ page }) => {
+test('home shows the stat tiles, dashboards and the recent-files card (no notes card)', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByTestId('home')).toBeVisible();
   await expect(page.getByTestId('home-date')).not.toBeEmpty();
   await expect(page.getByTestId('card-dashboards')).toHaveCount(0);
   // dashboards with their not-connected notices (D37)
-  await expect(page.getByTestId('week-calendar')).toBeVisible();
-  await expect(page.getByTestId('calendar-status')).toContainText('No calendar connected yet');
+  await expect(page.getByTestId('view-title')).toContainText('Ben');
+  await expect(page.getByTestId('view-title')).toHaveText(/^Good (morning|afternoon|evening), Ben$/);
+  await expect(page.getByTestId('home-date')).toContainText('No briefing yet.');
+  await expect(page.getByTestId('stat-events')).toContainText('Calendar not connected');
+  await expect(page.getByTestId('stat-tasks')).toContainText('Tasks not connected');
+  await expect(page.getByTestId('stat-portfolio')).toContainText('Portfolio not connected');
+  await expect(page.getByTestId('stat-brain').getByTestId('stat-value')).not.toHaveText('—');
+  await expect(page.getByTestId('month-calendar')).toBeVisible();
+  await expect(page.getByTestId('week-calendar')).toHaveCount(0);
+  await expect(page.getByTestId('calendar-status')).toContainText('No calendar connected yet.');
   await expect(page.getByTestId('portfolio-panel')).toBeVisible();
   await expect(page.getByTestId('portfolio-status')).toContainText('Not connected');
+  await expect(page.getByTestId('portfolio-panel')).not.toContainText('—');
   await expect(page.getByTestId('briefing-panel')).toBeVisible();
   await expect(page.getByTestId('briefing-panel')).toContainText('No briefing yet');
   const atlasCard = page.getByTestId('card-recent-atlas');
-  await expect(atlasCard.getByRole('heading', { name: 'Recently changed in Atlas' })).toBeVisible();
+  await expect(atlasCard.getByRole('heading', { name: 'Recently changed', exact: true })).toBeVisible();
   await expect(atlasCard.locator('a').first()).toBeVisible();
-  const notesCard = page.getByTestId('card-recent-notes');
-  await expect(notesCard.getByRole('heading', { name: 'Recent notes' })).toBeVisible();
-  await expect(notesCard.getByRole('link', { name: /Page Two/ })).toBeVisible();
-  await expect(notesCard.getByRole('link', { name: /Page One/ })).toBeVisible();
+  await expect(atlasCard.locator('a').first()).toHaveAttribute('href', /^\/atlas\//);
+  // Chalk notes were removed (D41)
+  await expect(page.getByTestId('card-recent-notes')).toHaveCount(0);
   // forbidden files never show up as recent
   await expect(atlasCard).not.toContainText('.env');
   await expect(atlasCard).not.toContainText('sqlite');
   await expect(atlasCard).not.toContainText('raw/');
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.screenshot({ path: '/e2e/artifacts/home-empty-light.png', animations: 'disabled' });
+});
+
+test('home renders connected dashboards', async ({ page }) => {
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const day = (n: number) => iso(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + n));
+  const item = (o: Record<string, unknown>) => ({
+    durationMin: null, time: null, tag: null, done: null, subtasks: [], source: 'google', location: null, ...o,
+  });
+  const today = iso(now);
+  const upNext = item({ id: 'ev1', title: 'Standup with HyperSense', date: today, time: '09:00', durationMin: 15, kind: 'event', tag: 'Work', location: 'Zoom' });
+  const items = [
+    item({ id: 't1', title: 'Finish DSA problem set', date: day(0), kind: 'task', tag: 'School', done: true }),
+    item({ id: 't2', title: 'Ship Atlas redesign', date: day(2), kind: 'task', tag: 'Build', done: false, subtasks: [{ title: 'Home', done: true }, { title: 'Dashboards', done: false }] }),
+    item({ id: 't3', title: 'Gym', date: day(3), time: '17:30', durationMin: 60, kind: 'event', tag: 'Health' }),
+    item({ id: 't4', title: 'Pay rent', date: day(4), kind: 'task', tag: 'Money', done: false }),
+    upNext,
+  ];
+  const history = Array.from({ length: 24 }, (_, i) => ({
+    t: new Date(now.getTime() - (23 - i) * 86_400_000).toISOString(),
+    value: 11_800 + i * 24 + (i % 3) * 35,
+  }));
+  const hold = (symbol: string, name: string, shares: number, price: number, dayChangePct: number) => ({
+    symbol, name, shares, price, dayChangePct, value: Math.round(shares * price * 100) / 100,
+    spark: Array.from({ length: 12 }, (_, i) => price * (1 + (dayChangePct / 100) * (i / 11) + (i % 2) * 0.004)),
+  });
+  const json = (body: unknown) => ({ contentType: 'application/json', body: JSON.stringify(body) });
+  await page.route('**/api/briefing', (r) => r.fulfill(json({
+    connected: true, generatedAt: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 2).toISOString(),
+    summary: 'Two meetings today and one task due Friday; the morning is free for the redesign.',
+    upNext: [upNext, item({ id: 'ev2', title: 'Office hours', date: day(3), time: '14:00', durationMin: 30, kind: 'event', tag: 'School' })],
+    suggestions: [{ id: 's1', text: 'Block 90 minutes for the Dashboards subtask.' }, { id: 's2', text: 'Reply to the recruiter email before noon.' }],
+  })));
+  await page.route('**/api/calendar*', (r) => r.fulfill(json({ connected: true, sources: ['google'], start: day(0), days: 7, items })));
+  await page.route('**/api/portfolio*', (r) => r.fulfill(json({
+    connected: true, sources: ['broker'], asOf: now.toISOString(), currency: 'USD', range: '1M',
+    total: 12_340, dayChange: { amount: 40.5, pct: 0.33 }, totalChange: { amount: -120, pct: -0.96 }, history,
+    holdings: [hold('VTI', 'Vanguard Total Market', 20, 280, 0.4), hold('VXUS', 'Vanguard Intl', 40, 66, -0.2), hold('BND', 'Vanguard Bond', 30, 72, 0), hold('NVDA', 'NVIDIA', 5, 140, 1.2), hold('AAPL', 'Apple', 8, 230, -0.5)],
+  })));
+
+  await page.setViewportSize({ width: 1440, height: 1500 });
+  await page.goto('/');
+  await expect(page.getByText('Two meetings today and one task due Friday')).toBeVisible();
+  await expect(page.getByTestId('briefing-panel').getByText('Standup with HyperSense')).toBeVisible();
+  const month = page.getByTestId('month-calendar');
+  await expect(month.locator('td[aria-current="date"]')).toHaveCount(1);
+  await expect(month.locator('td[aria-current="date"]')).toHaveAttribute('aria-label', /Today/);
+  await expect(month.getByTestId('today-event')).toContainText('Standup with HyperSense');
+  await expect(page.getByTestId('stat-events').getByTestId('stat-value')).not.toHaveText('—');
+  await expect(page.getByTestId('stat-portfolio')).toContainText('▲ 0.33%');
+  await expect(page.getByTestId('portfolio-panel')).toContainText('$12,340.00');
+  await expect(page.getByTestId('holding-row')).toHaveCount(4);
+  await expect(page.getByTestId('portfolio-chart')).toHaveAttribute('role', 'img');
+  await expect(page.getByTestId('connectors-count')).toHaveText('3 of 3 connected');
+  // the month arrows refetch the 42-day grid; the range segments refetch the portfolio
+  const calReq = page.waitForRequest((r) => r.url().includes('/api/calendar') && r.url().includes('days=42'));
+  const label = await month.getByTestId('month-label').textContent();
+  await month.getByRole('button', { name: 'Next month' }).click();
+  await calReq;
+  await expect(month.getByTestId('month-label')).not.toHaveText(label ?? '');
+  await month.getByRole('button', { name: 'Previous month' }).click();
+  await expect(month.getByTestId('month-label')).toHaveText(label ?? '');
+  const pfReq = page.waitForRequest((r) => r.url().includes('/api/portfolio') && r.url().includes('range=1W'));
+  await page.getByTestId('portfolio-panel').getByRole('button', { name: '1W', exact: true }).click();
+  await pfReq;
+  await expect(page.getByTestId('portfolio-panel').getByRole('button', { name: '1W', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.screenshot({ path: '/e2e/artifacts/home-light.png', animations: 'disabled' });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.screenshot({ path: '/e2e/artifacts/home-dark.png', animations: 'disabled' });
+  // the Calendar view keeps the week, with the task totals
+  await page.goto('/calendar');
+  await expect(page.getByTestId('week-calendar')).toContainText('1 of 3 done');
+  await expect(page.getByTestId('calendar-day').and(page.locator('[aria-current="date"]')).getByText('Today', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('upcoming-card')).toContainText('Standup with HyperSense');
+  await page.goto('/settings');
+  await expect(page.getByTestId('connector-calendar')).toContainText('Connected');
+  await expect(page.getByTestId('connector-calendar')).toContainText('google');
+  await expect(page.getByTestId('settings-connectors-count')).toHaveText('3 of 3 connected');
+  await page.goto('/');
+  await expect(page.getByTestId('portfolio-panel')).toContainText('$12,340.00');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload(); // phone width starts with the sidebar closed
+  await expect(page.getByTestId('portfolio-panel')).toContainText('$12,340.00');
+  await page.screenshot({ path: '/e2e/artifacts/home-phone-dark.png', animations: 'disabled' });
 });
 
 test('rail navigates to calendar and portfolio; deep links survive a refresh', async ({ page }) => {
@@ -54,9 +151,7 @@ test('rail navigates to calendar and portfolio; deep links survive a refresh', a
   await page.getByTestId('rail-brain').click();
   await expect(page).toHaveURL(/\/atlas$/);
   await expect(page.getByTestId('rail-brain')).toHaveAttribute('aria-current', 'page');
-  await page.getByTestId('rail-notes').click();
-  await expect(page).toHaveURL(/\/notes$/);
-  await expect(page.getByTestId('rail-notes')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByTestId('view-title')).toHaveText('Brain');
   await page.getByTestId('rail-home').click();
   await expect(page.getByTestId('home')).toBeVisible();
 });
@@ -106,45 +201,42 @@ test('Ctrl+Backslash toggles the sidebar and the choice survives a reload', asyn
   await expect(sidebar).toHaveAttribute('data-open', 'true');
   await page.reload();
   await expect(sidebar).toHaveAttribute('data-open', 'true');
-  // Notes and Brain in the rail reveal a hidden sidebar
+  // Brain in the rail reveals a hidden sidebar
   await page.keyboard.press('Control+Backslash');
   await expect(sidebar).toHaveAttribute('data-open', 'false');
   await page.getByTestId('rail-brain').click();
   await expect(sidebar).toHaveAttribute('data-open', 'true');
 });
 
-test('command box: Ctrl+K focuses, jumps to a note page and to a brain file', async ({ page }) => {
+test('command dialog: Ctrl+K opens, lists the views, jumps to a brain file, Escape closes', async ({ page }) => {
   await page.goto('/');
-  const box = page.getByTestId('command-box');
   await page.locator('body').click({ position: { x: 5, y: 5 } });
   await page.keyboard.press('Control+k');
+  const box = page.getByTestId('command-box');
   await expect(box).toBeFocused();
   // an empty query lists the views
-  await expect(page.getByTestId('command-result')).toHaveCount(5);
-  await box.fill('Page One');
-  await expect(page.getByTestId('command-result').first()).toContainText('Page One');
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/notes\/p1$/);
-  await expect(box).toHaveValue('');
-
-  await page.keyboard.press('Control+k');
+  await expect(page.getByTestId('command-result')).toHaveCount(10);
   await box.fill('about.md');
   await expect(page.getByTestId('command-result').first()).toContainText('entities/personal/about.md');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/atlas\/entities\/personal\/about\.md$/);
+  await expect(box).toHaveCount(0);
 
-  // arrow keys, Escape and click
+  // arrow keys and Escape
   await page.keyboard.press('Control+k');
   await box.fill('o');
+  await expect(page.getByTestId('command-result').first()).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('ArrowDown');
-  await expect(box).toHaveAttribute('aria-activedescendant', 'cmd-opt-1');
+  await expect(page.getByTestId('command-result').nth(1)).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Escape');
-  await expect(box).toHaveValue('');
-  await expect(box).not.toBeFocused();
-  await page.keyboard.press('Control+k');
-  await box.fill('calendar');
+  await expect(box).toHaveCount(0);
+  // the top-bar field opens it too, and a click jumps
+  await page.getByTestId('command-trigger').click();
+  await expect(page.getByTestId('command-box')).toHaveValue('');
+  await page.getByTestId('command-box').fill('calendar');
   await page.getByTestId('command-result').first().click();
   await expect(page).toHaveURL(/\/calendar$/);
+  await expect(page.getByTestId('view-title')).toHaveText('Calendar');
 });
 
 test('open a brain markdown file from the tree, follow relative links, refresh and go back', async ({ page }) => {
@@ -198,55 +290,68 @@ test('forbidden files are not reachable', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'raw', exact: true })).toHaveCount(0);
 });
 
-test('open a note page: iframe shows the stub; sidebar toggle; switching pages keeps the iframe', async ({ page }) => {
-  await page.goto('/');
-  await page.getByTestId('note-page').filter({ hasText: 'Page One' }).click();
-  await expect(page).toHaveURL(/\/notes\/p1$/);
-  const frame = page.frameLocator('[data-testid="notes-frame"]');
-  await expect(frame.locator('#board-id')).toHaveText('p1');
-  await expect(frame.locator('#embed-flag')).toHaveText('yes');
-  await expect(page.getByTestId('notes-title')).toContainText('Page One');
-
-  const button = page.getByTestId('notebooks-button');
-  await expect(button).toHaveAttribute('aria-pressed', 'false');
-  await button.click();
-  await expect(frame.locator('#sidebar-state')).toHaveText('open');
-  await expect(button).toHaveAttribute('aria-pressed', 'true');
-  await button.click();
-  await expect(frame.locator('#sidebar-state')).toHaveText('closed');
-  await expect(button).toHaveAttribute('aria-pressed', 'false');
-
-  // mark the document inside the iframe; a reload would wipe the marker
-  await frame.locator('body').evaluate(() => { (window as unknown as { __marker: string }).__marker = 'kept'; });
-  await page.getByTestId('note-page').filter({ hasText: 'Page Two' }).click();
-  await expect(frame.locator('#board-id')).toHaveText('p2');
-  await expect(page).toHaveURL(/\/notes\/p2$/);
-  await expect(page.locator('[data-testid="note-page"][data-id="p2"]')).toHaveAttribute('aria-current', 'page');
-  expect(await frame.locator('body').evaluate(() => (window as unknown as { __marker?: string }).__marker)).toBe('kept');
-
-  // deep link / refresh on a notes URL
-  await page.reload();
-  await expect(page.frameLocator('[data-testid="notes-frame"]').locator('#board-id')).toHaveText('p2');
-});
-
-test('Home button returns home', async ({ page }) => {
-  await page.goto('/notes/p1');
-  await expect(page.frameLocator('[data-testid="notes-frame"]').locator('#board-id')).toHaveText('p1');
+test('Home button returns home from a brain file', async ({ page }) => {
+  await page.goto('/atlas/entities/personal/about.md');
+  await expect(page.getByTestId('preview').getByRole('heading', { name: 'Personal' })).toBeVisible();
   await page.getByTestId('rail-home').click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('home')).toBeVisible();
-  await expect(page.getByTestId('notes-frame')).toHaveCount(0);
+  await expect(page.getByTestId('preview')).toHaveCount(0);
 });
 
-test('a missing Chalk shows a friendly message and the rest of Atlas works', async ({ page }) => {
-  await page.route('**/api/notes/library', (route) =>
-    route.fulfill({ status: 502, contentType: 'application/json', body: JSON.stringify({ detail: "Chalk isn't reachable" }) }),
-  );
+test('the removed Chalk embed: /notes/p1 renders the Notes frame with no iframe; the library API is a JSON 404', async ({ page, request }) => {
+  await page.goto('/notes/p1');
+  await expect(page.getByTestId('notes-view')).toBeVisible();
+  await expect(page.getByTestId('view-title')).toHaveText('Notes');
+  await expect(page.locator('iframe')).toHaveCount(0);
+  const r = await request.get('/api/notes/library');
+  expect(r.status()).toBe(404);
+  expect(r.headers()['content-type']).toContain('application/json');
+  expect(await r.json()).toEqual({ detail: 'Not found' });
+});
+
+const FRAMES: [string, string, string[], RegExp][] = [
+  ['tasks', 'Tasks', ['Today', 'Upcoming', 'Done'], /Tasks aren't connected yet/],
+  ['notes', 'Notes', ['Pinned', 'Recent', 'Notebooks'], /Notes are being redesigned/],
+  ['projects', 'Projects', ['Active', 'Recently updated'], /Projects from your brain will appear here/],
+  ['messages', 'Messages', ['Inbox', 'Slack'], /Connect Gmail and Slack/],
+  ['people', 'People', ['Recent contacts', 'Follow-ups'], /People from your brain and contacts/],
+];
+for (const [route, title, sections, empty] of FRAMES) {
+  test(`tab frame /${route}: title, sections and the empty sentence, no dead buttons`, async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId(`rail-${route}`).click();
+    await expect(page).toHaveURL(new RegExp(`/${route}$`));
+    await expect(page.getByTestId(`rail-${route}`)).toHaveAttribute('aria-current', 'page');
+    const view = page.getByTestId(`${route}-view`);
+    await expect(view).toBeVisible();
+    await expect(page.getByTestId('view-title')).toHaveText(title);
+    for (const s of sections) await expect(view.getByRole('heading', { name: s, exact: true })).toBeVisible();
+    await expect(view.getByTestId('frame-empty').first()).toContainText(empty);
+    await expect(view.getByRole('button')).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId(`${route}-view`)).toBeVisible();
+  });
+}
+
+test('settings: connectors from the three feeds, system appearance, terminal bridge address', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/settings');
+  await expect(page.getByTestId('settings-view')).toBeVisible();
+  await expect(page.getByTestId('view-title')).toHaveText('Settings');
+  await expect(page.getByTestId('settings-connectors-count')).toHaveText('0 of 3 connected');
+  await expect(page.getByTestId('connectors-count')).toHaveText('0 of 3 connected');
+  for (const id of ['calendar', 'portfolio', 'briefing']) await expect(page.getByTestId(`connector-${id}`)).toContainText('Not connected');
+  for (const id of ['mail', 'tasks', 'slack']) await expect(page.getByTestId(`connector-${id}`)).toContainText('Not available yet');
+  await expect(page.getByTestId('setting-appearance')).toContainText('Follows your system setting.');
+  await expect(page.getByTestId('setting-terminal')).toContainText('http://term-test:7681');
+  await expect(page.getByTestId('settings-view').getByRole('button')).toHaveCount(0);
+  await page.screenshot({ path: '/e2e/artifacts/settings-dark.png', animations: 'disabled' });
+  // the nav's connectors card opens it
   await page.goto('/');
-  await expect(page.getByTestId('notes-error')).toContainText("Chalk isn't running at http://chalk-stub:8081");
-  await expect(page.getByTestId('card-recent-notes')).toContainText("Chalk isn't running");
-  await openAbout(page);
-  await expect(page.getByTestId('preview').getByRole('heading', { name: 'Personal' })).toBeVisible();
+  await page.getByTestId('connectors-card').click();
+  await expect(page).toHaveURL(/\/settings$/);
 });
 
 test('narrow screens: the left panel is collapsible', async ({ page }) => {
@@ -255,17 +360,148 @@ test('narrow screens: the left panel is collapsible', async ({ page }) => {
   await expect(page.getByTestId('sidebar')).toBeHidden();
   await page.getByTestId('nav-toggle').click();
   await expect(page.getByTestId('sidebar')).toBeVisible();
-  await page.getByTestId('note-page').filter({ hasText: 'Page One' }).click();
-  await expect(page).toHaveURL(/\/notes\/p1$/);
+  await page.getByRole('button', { name: 'entities', exact: true }).click();
+  await page.getByRole('button', { name: 'personal', exact: true }).click();
+  await page.locator('[data-testid="atlas-file"][data-path="entities/personal/about.md"]').click();
+  await expect(page).toHaveURL(/\/atlas\/entities\/personal\/about\.md$/);
   await expect(page.getByTestId('sidebar')).toBeHidden();
+});
+
+test('phone width: the nav is a drawer opened from the top bar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/');
+  await expect(page.getByTestId('rail')).toBeHidden();
+  await page.getByTestId('drawer-toggle').click();
+  await expect(page.getByTestId('rail')).toBeVisible();
+  await page.getByTestId('rail-tasks').click();
+  await expect(page).toHaveURL(/\/tasks$/);
+  await expect(page.getByTestId('rail')).toBeHidden();
+  await page.getByTestId('drawer-toggle').click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('rail')).toBeHidden();
 });
 
 test('phone width: the views do not scroll sideways', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 800 });
-  for (const path of ['/', '/calendar', '/portfolio']) {
+  for (const path of ['/', '/calendar', '/portfolio', '/tasks', '/settings']) {
     await page.goto(path);
-    await expect(page.getByTestId('rail')).toBeVisible();
+    await expect(page.getByTestId('view-title')).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, path).toBeLessThanOrEqual(0);
   }
+});
+
+// ---------- round 7 (D45): hover rail, connectors card, transitions ----------
+const box = async (l: import('@playwright/test').Locator) => {
+  const b = await l.boundingBox();
+  if (!b) throw new Error('no box');
+  return b;
+};
+
+test.describe('hover rail', () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test('collapsed at rest, expands on hover after the delay, collapses on leave; main does not move', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    const main = page.locator('main.main');
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-current', 'page');
+    expect((await box(rail)).width).toBeLessThanOrEqual(80);
+    const before = await box(main);
+    await page.getByTestId('rail-calendar').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await expect(page.getByTestId('rail-calendar').locator('.rail-label')).toHaveCSS('opacity', '1');
+    await expect(page.getByTestId('rail-calendar')).toBeVisible();
+    const during = await box(main);
+    expect(during.x).toBe(before.x);
+    expect(during.width).toBe(before.width);
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+    await expect(page.getByTestId('rail-calendar').locator('.rail-label')).toHaveCSS('opacity', '0');
+    expect(await box(main)).toEqual(before);
+    // the current item stays highlighted while collapsed
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('rail-home')).toHaveAttribute('aria-label', 'Home');
+  });
+
+  test('a graze shorter than the hover delay does not open it; Escape collapses', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.mouse.move(400, 300);
+    await page.mouse.move(30, 300);
+    await page.mouse.move(400, 300);
+    await page.waitForTimeout(400);
+    expect((await box(rail)).width).toBeLessThanOrEqual(80);
+    await page.getByTestId('rail-home').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+  });
+
+  test('keyboard: Tab into the rail expands it', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.locator('body').click({ position: { x: 600, y: 5 } });
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('rail-brand')).toBeFocused();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+  });
+
+  test('clicks work on collapsed icons and the rail closes after navigating', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('rail-tasks').click();
+    await expect(page).toHaveURL(/\/tasks$/);
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(page.getByTestId('rail'))).width).toBeLessThanOrEqual(80);
+  });
+
+  test('connectors card: the status sits on its own line inside the card; screenshots', async ({ page }) => {
+    await page.goto('/');
+    const rail = page.getByTestId('rail');
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.screenshot({ path: '/e2e/artifacts/rail-collapsed-light.png', animations: 'disabled' });
+    await page.getByTestId('rail-home').hover();
+    await expect.poll(async () => (await box(rail)).width).toBeGreaterThanOrEqual(230);
+    await expect(page.getByTestId('connectors-count')).toHaveCSS('opacity', '1');
+    await page.waitForTimeout(350);
+    const card = await box(page.getByTestId('connectors-card'));
+    const label = await box(page.getByTestId('connectors-card').getByText('Connectors', { exact: true }));
+    const count = await box(page.getByTestId('connectors-count'));
+    expect(count.y).toBeGreaterThan(label.y + label.height - 1);
+    for (const b of [label, count]) {
+      expect(b.x).toBeGreaterThanOrEqual(card.x);
+      expect(b.y).toBeGreaterThanOrEqual(card.y);
+      expect(b.x + b.width).toBeLessThanOrEqual(card.x + card.width);
+      expect(b.y + b.height).toBeLessThanOrEqual(card.y + card.height);
+    }
+    await page.screenshot({ path: '/e2e/artifacts/rail-expanded-light.png', animations: 'disabled' });
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.screenshot({ path: '/e2e/artifacts/rail-expanded-dark.png', animations: 'disabled' });
+    await page.mouse.move(900, 400);
+    await expect.poll(async () => (await box(rail)).width).toBeLessThanOrEqual(80);
+    await page.screenshot({ path: '/e2e/artifacts/rail-collapsed-dark.png', animations: 'disabled' });
+  });
+});
+
+test('the brain tree panel animates and ends up inert and hidden when closed', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/');
+  const sidebar = page.getByTestId('sidebar');
+  await expect(sidebar).toBeVisible();
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toHaveAttribute('data-open', 'false');
+  await expect(sidebar).toBeHidden();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await page.keyboard.press('Control+Backslash');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).not.toHaveAttribute('inert', '');
+  await expect.poll(async () => (await box(sidebar)).width).toBe(280);
+});
+
+test('command dialog opens and closes with its exit animation', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('command-trigger').click();
+  await expect(page.getByTestId('command-box')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('command-box')).toHaveCount(0);
 });

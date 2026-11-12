@@ -7,34 +7,16 @@ x-health: &health
   start_period: 5s
   start_interval: 1s
 services:
-  chalk-stub:                       # tiny fake Chalk: /api/library plus an embed page implementing the Chalk side of D13
-    image: python:3.14.9-slim-trixie
-    command: ["python", "/stub/server.py"]
-    volumes:
-      - ./stub/chalk-stub:/stub:ro
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/api/library', timeout=2)"]
-      interval: 3s
-      start_period: 2s
-      timeout: 3s
-      retries: 20
-      start_interval: 1s
   app-test:                         # runtime image with the FIXTURE brain, never the real one
     image: atlas-app-test:${ATLAS_TEST_TAG:-local}
     build:
       context: .
       target: runtime
     environment:
-      CHALK_API_URL: http://chalk-stub:8081
-      CHALK_PUBLIC_URL: http://chalk-stub:8081
       ATLAS_BRAIN_LABEL: fixture-brain
-      ATLAS_ORIGINS: http://app-test:8000     # the e2e browser loads Atlas from here (D22)
       ATLAS_TERMINAL_URL: http://term-test:7681
     volumes:
       - ./backend/tests/fixtures/aios:/aios:ro
-    depends_on:
-      chalk-stub:
-        condition: service_healthy
     healthcheck: *health
   term-test:                        # the terminal bridge (Linux build) for the dock e2e; private network only
     image: atlas-term-test:${ATLAS_TEST_TAG:-local}

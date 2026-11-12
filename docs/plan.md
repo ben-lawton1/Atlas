@@ -52,7 +52,48 @@ Next for round 3:
 - **Briefing.** Generated each morning once calendar and mail are connected.
 - **Deferred design items:** Spaces, notifications, Auto-plan, "Ask Atlas" in the command box.
 
+## Round 4 (2026-11-03): Chalk integration removed (D41), branch `chore/remove-chalk-embed`
+
+Ben didn't like how Chalk was built into Atlas and wants to redesign it from a clean slate. Removed: the iframe and Notes view, the Notes tree and management, the library and write proxy, the D22 write guard, the Notes rail item and Home card, note commands, the `CHALK_*` and `ATLAS_ORIGINS` settings and the `chalk-stub` service. Restorable from tag `chalk-embed-v1` (e88f1f2).
+
+| # | Slice | Status |
+|---|---|---|
+| 18 | Frontend: brain-only sidebar, no notes route, library, toast or note commands | done |
+| 19 | Backend: `library.py`, `notes_write.py` and their tests removed; `/api/config` is `{brainLabel, terminalUrl}` | done |
+| 20 | Infra: compose, `.env.example`, `stub/chalk-stub/` | done |
+| 21 | e2e: `notes-terminal.spec.ts` renamed `terminal.spec.ts`, notes and iframe tests dropped | done |
+| 22 | Docs: README, CLAUDE.md, D41 and the affected decisions | done |
+
+Checks 2026-11-03 (Docker): backend 111 passed, frontend 64 unit tests passed, e2e 25/25. Not pushed; the prod `atlas` project is not rebuilt yet.
+
 ## Not yet done / next
 
 - **Running bridge locks its build:** `bridge/dist/atlas-terminal.exe` is locked while it runs, so `bridge-build` fails then. Consider running a copy from a stable folder.
 - Dashboards, remote access and authentication (D10).
+
+## Round 6 (2026-11-08): liquid glass, branch `feat/glass-home` (off `feat/apple-design-home`)
+
+Spec: `docs/glass-spec.md`. Decisions D43, D44.
+
+| # | Slice | Status |
+|---|---|---|
+| 23 | Deps (Tailwind v4, lucide-react, cmdk, recharts, motion, react-day-picker, Radix Dialog, clsx, tailwind-merge, cva), `@/` alias, ui primitives, contrast script | done |
+| 24 | Shell: backdrop, glass nav, top bar, command dialog, tab frames, Settings, six new routes | done |
+| 25 | Home: greeting header, stat tiles, month calendar, recent files, Recharts portfolio; Calendar and Portfolio views restyled | done |
+| 26 | e2e rewritten for the new structure, screenshots (`home-{light,dark,phone-dark,empty-light}`, `settings-dark`) | done |
+| 27 | Docs: design.md, decisions D43 and D44, plan, CLAUDE.md | done |
+
+Checks 2026-11-08 (Docker): web unit 74 passed, api unit 111 passed, `npm run build` ok, e2e 33/33. Main chunk 129.5 kB gzip before, 227.5 kB after (+98 kB, under the 150 kB limit); Recharts is a separate lazy chunk (94.4 kB gzip). Not pushed.
+
+Next: connectors (calendar, portfolio, mail, Slack), Tasks storage, Notes redesign.
+
+## Round 7 (2026-11-08): hover rail, transitions, connectors card, branch `feat/glass-home`
+
+Spec: `docs/round7-spec.md`. Decision D45.
+
+| # | Slice | Status |
+|---|---|---|
+| 28 | A: connectors card stacked, collapsed hover rail (`useRailExpand`), brain panel and command dialog transitions, top-bar hover states, e2e and screenshots (`rail-{collapsed,expanded}-{light,dark}`) | done |
+| 29 | B: no caret on non-editable text | see builder B |
+
+Checks 2026-11-08 (Docker, project `atlas-test-a`): web unit 81 passed, `npm run build` ok (inside the e2e image build), e2e 40/40.

@@ -1,20 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MotionConfig, motion } from 'motion/react';
 import { api, type AtlasNode, type Config } from '../api';
-import { LIBRARY_CHANGED_EVENT } from '../messages';
-import { createNotesActions } from '../notesActions';
-import { navigate, useRoute, type Route } from '../router';
-import { useLibrary } from '../state';
-import { CommandBox } from './CommandBox';
+import { useRoute } from '../router';
+import { GlassPanel } from '@/components/ui/glass';
 import { FilePreview } from './FilePreview';
 import { Home } from './Home';
-import { Icon } from './icons';
-import { NotesView } from './NotesView';
-import { Rail } from './Rail';
+import { Nav } from './Nav';
 import { Sidebar } from './Sidebar';
-import { TerminalButton, TerminalPanel } from './terminal/TerminalPanel';
-import { Toast } from './Toast';
+import { TopBar } from './TopBar';
+import { TerminalPanel } from './terminal/TerminalPanel';
 import { CalendarView } from './dashboards/CalendarView';
 import { PortfolioView } from './dashboards/PortfolioView';
+import { SettingsView } from './frames/SettingsView';
+import { TabFrame, hasFrame } from './frames/TabFrame';
 
 const NARROW = '(max-width: 760px)';
 const SIDEBAR_OPEN_KEY = 'atlas:sidebar-open';
@@ -39,22 +37,13 @@ function writeSidebarOpen(open: boolean): void {
   }
 }
 
-const VIEW_TITLES: Record<Route['name'], string> = { home: 'Home', calendar: 'Calendar', portfolio: 'Portfolio', notes: 'Notes', atlas: 'Brain' };
-
-function todayLabel(): string {
-  const d = new Date();
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
-  const rest = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${wd} · ${rest}`;
-}
-
 export function App() {
   const route = useRoute();
-  const { library, reload } = useLibrary();
   const [config, setConfig] = useState<Config | null>(null);
   const [tree, setTree] = useState<{ sections: AtlasNode[] } | null>(null);
   const [treeError, setTreeError] = useState<string | null>(null);
   const [navOpen, setNavOpenState] = useState(readSidebarOpen);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navOpenRef = useRef(navOpen);
   navOpenRef.current = navOpen;
   const setNavOpen = useCallback((open: boolean) => {
@@ -79,92 +68,64 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [setNavOpen]);
 
-  // On a phone-sized screen the panel is an overlay: close it after navigating.
+  // Escape closes the phone drawer.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawerOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
+
+  // On a phone-sized screen the sidebar and nav are overlays: close them after navigating.
   useEffect(() => {
     if (isNarrow()) setNavOpenState(false);
-  }, [route.name, route.name === 'atlas' ? route.path : route.name === 'notes' ? route.boardId : null]);
-
-  const chalkUrl = config?.chalkPublicUrl ?? null;
-
-  // Notes management (D21, D24). The actions read the live route through a ref so they never act on a stale one.
-  const boardRef = useRef<string | null>(null);
-  boardRef.current = route.name === 'notes' ? route.boardId : null;
-  const actions = useMemo(
-    () =>
-      createNotesActions({
-        api,
-        refresh: reload,
-        announce: () => window.dispatchEvent(new Event(LIBRARY_CHANGED_EVENT)),
-        navigate: (href) => navigate(href),
-        currentBoardId: () => boardRef.current,
-      }),
-    [reload],
-  );
+    setDrawerOpen(false);
+  }, [route.name, route.name === 'atlas' ? route.path : null]);
 
   return (
-    <div className="app">
-      <Rail route={route} onShowSidebar={() => setNavOpen(true)} />
-      <div className="body">
-        <Sidebar
-          route={route}
-          library={library}
-          chalkUrl={chalkUrl}
-          tree={tree}
-          treeError={treeError}
-          onRetryLibrary={() => void reload()}
-          open={navOpen}
-          actions={actions}
-        />
-        {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
-        <div className="column">
-          <header className="topbar">
-            <button
-              type="button"
-              className="btn icon"
-              aria-label="Toggle sidebar"
-              aria-expanded={navOpen}
-              title="Sidebar — Ctrl+\"
-              data-testid="nav-toggle"
-              onClick={() => setNavOpen(!navOpen)}
-            >
-              <Icon name="sidebar" size={18} />
-            </button>
-            <div className="topbar-title">
-              <h1 className="view-title" data-testid="view-title">{VIEW_TITLES[route.name]}</h1>
-              <span className="view-date" data-testid="home-date">{todayLabel()}</span>
+    <MotionConfig reducedMotion="user">
+      <div className="atlas-backdrop" aria-hidden="true" />
+      <div className="app">
+        <Nav route={route} open={drawerOpen} onNavigate={() => setDrawerOpen(false)} onShowSidebar={() => setNavOpen(true)} />
+        {drawerOpen && <div className="nav-scrim" onClick={() => setDrawerOpen(false)} />}
+        <div className="flex h-full min-w-0 flex-1 flex-col gap-5">
+          <TopBar
+            config={config}
+            sections={tree?.sections ?? null}
+            sidebarOpen={navOpen}
+            onToggleSidebar={() => setNavOpen(!navOpen)}
+            onOpenDrawer={() => setDrawerOpen(true)}
+          />
+          <GlassPanel as="main" variant="main" className="main flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="relative flex min-h-0 flex-1">
+              <Sidebar route={route} tree={tree} treeError={treeError} open={navOpen} />
+              {navOpen && <div className="scrim" onClick={() => setNavOpen(false)} />}
+              <div className="pane-scroll">
+                <motion.div
+                  key={route.name}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="flex min-w-0 flex-col"
+                >
+                  {route.name === 'home' && <Home />}
+                  {route.name === 'calendar' && <CalendarView />}
+                  {route.name === 'portfolio' && <PortfolioView />}
+                  {route.name === 'settings' && <SettingsView />}
+                  {hasFrame(route.name) && <TabFrame name={route.name} />}
+                  {route.name === 'atlas' && (
+                    <>
+                      <h1 className="view-h1 mb-4" data-testid="view-title">Brain</h1>
+                      {route.path ? <FilePreview key={route.path} path={route.path} /> : <p className="notice">Choose a file in the sidebar.</p>}
+                    </>
+                  )}
+                </motion.div>
+              </div>
             </div>
-            <CommandBox library={library.status === 'ok' ? library.data : null} sections={tree?.sections ?? null} />
-            {config && <span className="muted brain-label" title="Brain folder">{config.brainLabel}</span>}
-            <TerminalButton />
-          </header>
-          <main className="main">
-            {route.name === 'home' && <Home library={library} chalkUrl={chalkUrl} />}
-            {route.name === 'calendar' && <CalendarView />}
-            {route.name === 'portfolio' && <PortfolioView />}
-            {route.name === 'atlas' &&
-              (route.path ? (
-                <FilePreview key={route.path} path={route.path} />
-              ) : (
-                <div className="pane-scroll"><p className="notice">Pick a file from the Atlas tree.</p></div>
-              ))}
-            {route.name === 'notes' &&
-              (!route.boardId ? (
-                <div className="pane-scroll"><p className="notice">Pick a page from the Notes tree.</p></div>
-              ) : chalkUrl ? (
-                <NotesView
-                  boardId={route.boardId}
-                  chalkUrl={chalkUrl}
-                  library={library.status === 'ok' ? library.data : null}
-                  onLibraryChanged={() => void reload()}
-                />
-              ) : (
-                <div className="pane-scroll"><p className="muted">Loading…</p></div>
-              ))}
             <TerminalPanel />
-          </main>
+          </GlassPanel>
         </div>
       </div>
-      <Toast />
-    </div>
+    </MotionConfig>
   );
 }
